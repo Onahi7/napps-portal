@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   Shield, 
   Upload, 
@@ -15,7 +18,12 @@ import {
   FileText,
   Eye,
   Edit,
-  Trash2
+  Trash2,
+  Download,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +31,13 @@ export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<any>(null);
+  const [skipValidation, setSkipValidation] = useState(false);
+  const [updateExisting, setUpdateExisting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +53,112 @@ export default function Admin() {
       }
       setLoading(false);
     }, 1000);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+        toast.error('Please select a valid CSV file');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        toast.error('File size must be less than 10MB');
+        return;
+      }
+      setCsvFile(file);
+      setUploadResult(null);
+      toast.success(`Selected: ${file.name}`);
+    }
+  };
+
+  const handleCsvUpload = async () => {
+    if (!csvFile) {
+      toast.error('Please select a CSV file first');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', csvFile);
+      formData.append('skipValidation', skipValidation.toString());
+      formData.append('updateExisting', updateExisting.toString());
+
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+
+      const response = await fetch('http://localhost:3001/api/v1/proprietors/import/csv', {
+        method: 'POST',
+        body: formData,
+        // Add authentication header if needed
+        // headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      setUploadResult(result);
+      
+      toast.success(`CSV import completed! ${result.summary?.successful || 0} records processed successfully.`);
+      
+      // Reset file input
+      setCsvFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload CSV. Please try again.');
+      setUploadResult({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      });
+    } finally {
+      setIsUploading(false);
+      setTimeout(() => setUploadProgress(0), 1000);
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const headers = [
+      'First Name', 'Middle Name', 'Last Name', 'Sex', 'Email', 'Phone',
+      'Registration Number', 'NAPPS Membership ID', 'Registration Status',
+      'NAPPS Registered', 'Awards', 'Position Held', 'Clearing Status', 'Total Amount Due'
+    ];
+    
+    const sampleData = [
+      'John', 'Michael', 'Smith', 'Male', 'john.smith@email.com', '+2348123456789',
+      'NAPPS202400001', 'NM2024001', 'approved', 'Registered',
+      'Best Teacher 2023', 'Headmaster', 'cleared', '0'
+    ];
+    
+    const csvContent = [
+      headers.join(','),
+      sampleData.join(',')
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'proprietors-import-template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    toast.success('Template downloaded successfully!');
   };
 
   if (!isAuthenticated) {
@@ -311,37 +432,182 @@ export default function Admin() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Upload className="w-5 h-5" />
-                    Data Management
+                    CSV Data Import
                   </CardTitle>
                   <CardDescription>
-                    Upload CSV files and manage proprietor data in bulk
+                    Upload CSV files to import proprietor data in bulk. Max file size: 10MB
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
+                    {/* File Upload Section */}
                     <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
                       <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                      <h4 className="font-semibold mb-2">Upload Proprietor Data</h4>
+                      <h4 className="font-semibold mb-2">
+                        {csvFile ? csvFile.name : 'Upload Proprietor Data'}
+                      </h4>
                       <p className="text-muted-foreground mb-4">
-                        Upload a CSV file with proprietor information. Make sure it includes all required fields.
+                        {csvFile
+                          ? `File size: ${(csvFile.size / 1024).toFixed(2)} KB`
+                          : 'Upload a CSV file with proprietor information. Make sure it includes all required fields.'}
                       </p>
-                      <Button variant="government">
-                        <Upload className="w-4 h-4" />
-                        Select CSV File
-                      </Button>
+                      
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="csv-upload"
+                      />
+                      
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          variant="government"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploading}
+                        >
+                          <Upload className="w-4 h-4" />
+                          {csvFile ? 'Change File' : 'Select CSV File'}
+                        </Button>
+                        
+                        {csvFile && (
+                          <Button
+                            variant="default"
+                            onClick={handleCsvUpload}
+                            disabled={isUploading}
+                          >
+                            {isUploading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4" />
+                                Start Import
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
+                    {/* Upload Progress */}
+                    {isUploading && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Uploading and processing...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <Progress value={uploadProgress} className="w-full" />
+                      </div>
+                    )}
+
+                    {/* Import Options */}
+                    <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                      <h4 className="font-semibold">Import Options</h4>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="skipValidation"
+                          checked={skipValidation}
+                          onCheckedChange={(checked) => setSkipValidation(checked as boolean)}
+                          disabled={isUploading}
+                        />
+                        <Label htmlFor="skipValidation" className="cursor-pointer">
+                          Skip validation (faster import, use with caution)
+                        </Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="updateExisting"
+                          checked={updateExisting}
+                          onCheckedChange={(checked) => setUpdateExisting(checked as boolean)}
+                          disabled={isUploading}
+                        />
+                        <Label htmlFor="updateExisting" className="cursor-pointer">
+                          Update existing records (match by email/phone)
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Import Results */}
+                    {uploadResult && (
+                      <Alert variant={uploadResult.success === false ? "destructive" : "default"}>
+                        {uploadResult.success === false ? (
+                          <XCircle className="h-4 w-4" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4" />
+                        )}
+                        <AlertTitle>
+                          {uploadResult.success === false ? 'Import Failed' : 'Import Complete'}
+                        </AlertTitle>
+                        <AlertDescription>
+                          {uploadResult.error ? (
+                            <p>{uploadResult.error}</p>
+                          ) : uploadResult.summary ? (
+                            <div className="space-y-2 mt-2">
+                              <p><strong>Total Processed:</strong> {uploadResult.summary.total || 0}</p>
+                              <p className="text-green-600"><strong>Successful:</strong> {uploadResult.summary.successful || 0}</p>
+                              {uploadResult.summary.errors > 0 && (
+                                <p className="text-red-600"><strong>Errors:</strong> {uploadResult.summary.errors}</p>
+                              )}
+                              {uploadResult.summary.warnings > 0 && (
+                                <p className="text-yellow-600"><strong>Warnings:</strong> {uploadResult.summary.warnings}</p>
+                              )}
+                              {uploadResult.details && (
+                                <div className="mt-2 space-y-1">
+                                  {uploadResult.details.created > 0 && (
+                                    <p>✓ Created: {uploadResult.details.created}</p>
+                                  )}
+                                  {uploadResult.details.updated > 0 && (
+                                    <p>✓ Updated: {uploadResult.details.updated}</p>
+                                  )}
+                                  {uploadResult.details.skipped > 0 && (
+                                    <p>⊘ Skipped: {uploadResult.details.skipped}</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p>Import completed successfully</p>
+                          )}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {/* Quick Actions */}
                     <div className="grid md:grid-cols-2 gap-4">
-                      <Button variant="outline" className="justify-start">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Download Template
+                      <Button
+                        variant="outline"
+                        className="justify-start"
+                        onClick={handleDownloadTemplate}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download CSV Template
                       </Button>
                       
                       <Button variant="outline" className="justify-start">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Export Current Data
+                        <FileText className="w-4 h-4 mr-2" />
+                        View Import Documentation
                       </Button>
                     </div>
+
+                    {/* Import Instructions */}
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>CSV Format Requirements</AlertTitle>
+                      <AlertDescription>
+                        <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                          <li>Required fields: First Name, Last Name, Email, Phone</li>
+                          <li>Email and Phone must be unique</li>
+                          <li>Use the template for correct format</li>
+                          <li>Max file size: 10MB</li>
+                        </ul>
+                      </AlertDescription>
+                    </Alert>
                   </div>
                 </CardContent>
               </Card>

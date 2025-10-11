@@ -10,18 +10,28 @@ import { UserPlus, Building, MapPin, Phone, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 interface RegistrationForm {
+  // Proprietor Information
   firstName: string;
   middleName: string;
   lastName: string;
   sex: "Male" | "Female" | "";
   email: string;
   phone: string;
+  awards: string;
+  positionHeld: string;
+  // School Information
   schoolName: string;
   schoolName2: string;
   address: string;
   addressLine2: string;
   lga: string;
-  aeqeo: string;
+  aeqeoZone: string;
+  yearOfEstablishment: string;
+  yearOfApproval: string;
+  typeOfSchool: string;
+  ownership: string;
+  gpsLongitude: string;
+  gpsLatitude: string;
 }
 
 export default function Register() {
@@ -32,12 +42,20 @@ export default function Register() {
     sex: "",
     email: "",
     phone: "",
+    awards: "",
+    positionHeld: "",
     schoolName: "",
     schoolName2: "",
     address: "",
     addressLine2: "",
     lga: "",
-    aeqeo: ""
+    aeqeoZone: "",
+    yearOfEstablishment: "",
+    yearOfApproval: "",
+    typeOfSchool: "",
+    ownership: "",
+    gpsLongitude: "",
+    gpsLatitude: ""
   });
   
   const [loading, setLoading] = useState(false);
@@ -183,6 +201,28 @@ export default function Register() {
                         />
                       </div>
                     </div>
+
+                    <div className="grid md:grid-cols-2 gap-4 mt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="positionHeld">Position Held in NAPPS</Label>
+                        <Input
+                          id="positionHeld"
+                          value={form.positionHeld}
+                          onChange={(e) => handleInputChange("positionHeld", e.target.value)}
+                          placeholder="e.g., Treasurer, Secretary"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="awards">Awards/Recognition</Label>
+                        <Input
+                          id="awards"
+                          value={form.awards}
+                          onChange={(e) => handleInputChange("awards", e.target.value)}
+                          placeholder="Any awards or recognition received"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <Separator />
@@ -256,13 +296,89 @@ export default function Register() {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="aeqeo">AEQEO Zone *</Label>
+                        <Label htmlFor="aeqeoZone">AEQEO Zone *</Label>
                         <Input
-                          id="aeqeo"
-                          value={form.aeqeo}
-                          onChange={(e) => handleInputChange("aeqeo", e.target.value)}
+                          id="aeqeoZone"
+                          value={form.aeqeoZone}
+                          onChange={(e) => handleInputChange("aeqeoZone", e.target.value)}
                           placeholder="Enter AEQEO zone"
                           required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4 mt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="yearOfEstablishment">Year of Establishment</Label>
+                        <Input
+                          id="yearOfEstablishment"
+                          type="number"
+                          min="1900"
+                          max={new Date().getFullYear()}
+                          value={form.yearOfEstablishment}
+                          onChange={(e) => handleInputChange("yearOfEstablishment", e.target.value)}
+                          placeholder="e.g., 2010"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="yearOfApproval">Year of Approval</Label>
+                        <Input
+                          id="yearOfApproval"
+                          type="number"
+                          min="1900"
+                          max={new Date().getFullYear()}
+                          value={form.yearOfApproval}
+                          onChange={(e) => handleInputChange("yearOfApproval", e.target.value)}
+                          placeholder="e.g., 2011"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4 mt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="typeOfSchool">Type of School</Label>
+                        <Input
+                          id="typeOfSchool"
+                          value={form.typeOfSchool}
+                          onChange={(e) => handleInputChange("typeOfSchool", e.target.value)}
+                          placeholder="e.g., Faith-Based, Secular"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="ownership">Ownership</Label>
+                        <Input
+                          id="ownership"
+                          value={form.ownership}
+                          onChange={(e) => handleInputChange("ownership", e.target.value)}
+                          placeholder="e.g., Individual, Corporate"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4 mt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="gpsLatitude">GPS Latitude</Label>
+                        <Input
+                          id="gpsLatitude"
+                          type="number"
+                          step="any"
+                          value={form.gpsLatitude}
+                          onChange={(e) => handleInputChange("gpsLatitude", e.target.value)}
+                          placeholder="e.g., 8.533000"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="gpsLongitude">GPS Longitude</Label>
+                        <Input
+                          id="gpsLongitude"
+                          type="number"
+                          step="any"
+                          value={form.gpsLongitude}
+                          onChange={(e) => handleInputChange("gpsLongitude", e.target.value)}
+                          placeholder="e.g., 8.483000"
                         />
                       </div>
                     </div>
