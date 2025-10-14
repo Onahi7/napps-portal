@@ -1,407 +1,598 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Separator } from "@/components/ui/separator";
-import { UserPlus, Building, MapPin, Phone, Mail } from "lucide-react";
+import { UserPlus, CheckCircle2, Circle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { 
+  Step1PersonalInfo, 
+  Step2SchoolInfo, 
+  Step3PaymentInfo 
+} from "@/components/registration";
 
-interface RegistrationForm {
-  // Proprietor Information
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  sex: "Male" | "Female" | "";
-  email: string;
-  phone: string;
-  awards: string;
-  positionHeld: string;
-  // School Information
-  schoolName: string;
-  schoolName2: string;
-  address: string;
-  addressLine2: string;
-  lga: string;
-  aeqeoZone: string;
-  yearOfEstablishment: string;
-  yearOfApproval: string;
-  typeOfSchool: string;
-  ownership: string;
-  gpsLongitude: string;
-  gpsLatitude: string;
+interface RegistrationData {
+  personalInfo?: any;
+  schoolInfo?: any;
+  paymentInfo?: any;
+  submissionId?: string;
+  paymentPending?: boolean;
+  paymentMethod?: 'online' | 'bank_transfer';
+  registrationNumber?: string;
+  timestamp?: number;
 }
 
-export default function Register() {
-  const [form, setForm] = useState<RegistrationForm>({
-    firstName: "",
-    middleName: "",
-    lastName: "",
-    sex: "",
-    email: "",
-    phone: "",
-    awards: "",
-    positionHeld: "",
-    schoolName: "",
-    schoolName2: "",
-    address: "",
-    addressLine2: "",
-    lga: "",
-    aeqeoZone: "",
-    yearOfEstablishment: "",
-    yearOfApproval: "",
-    typeOfSchool: "",
-    ownership: "",
-    gpsLongitude: "",
-    gpsLatitude: ""
-  });
-  
-  const [loading, setLoading] = useState(false);
+const STORAGE_KEY = 'napps_registration_progress';
+const PAYMENT_PENDING_KEY = 'napps_payment_pending';
 
-  const handleInputChange = (field: keyof RegistrationForm, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
+export default function Register() {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [registrationData, setRegistrationData] = useState<RegistrationData>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [resumeId, setResumeId] = useState("");
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+
+  // Load saved progress on mount
+  useEffect(() => {
+    const savedProgress = localStorage.getItem(STORAGE_KEY);
+    const paymentPending = localStorage.getItem(PAYMENT_PENDING_KEY);
+    
+    if (savedProgress) {
+      try {
+        const parsed = JSON.parse(savedProgress);
+        setRegistrationData(parsed);
+        
+        // Check if user has a pending payment
+        if (paymentPending && parsed.submissionId) {
+          const pendingData = JSON.parse(paymentPending);
+          
+          // Show alert about pending payment
+          toast.info('You have a pending registration', {
+            description: 'Would you like to check your payment status?',
+            duration: 10000,
+            action: {
+              label: 'Check Status',
+              onClick: () => {
+                if (pendingData.paymentMethod === 'online') {
+                  navigate(`/payment/status?submissionId=${parsed.submissionId}`);
+                } else {
+                  navigate(`/payment/status?submissionId=${parsed.submissionId}&method=bank_transfer`);
+                }
+              },
+            },
+          });
+          
+          setShowResumeDialog(true);
+        } else if (parsed.submissionId) {
+          setShowResumeDialog(true);
+        }
+      } catch (error) {
+        console.error('Failed to load saved progress:', error);
+      }
+    }
+  }, [navigate]);
+
+  // Save progress to localStorage with timestamp
+  const saveProgress = (data: RegistrationData) => {
+    try {
+      const dataWithTimestamp = {
+        ...data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataWithTimestamp));
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Basic validation
-    if (!form.firstName || !form.lastName || !form.email || !form.phone || !form.schoolName) {
-      toast.error("Please fill in all required fields");
+  // Save payment pending status
+  const savePaymentPending = (paymentMethod: 'online' | 'bank_transfer', submissionId: string) => {
+    try {
+      const pendingData = {
+        paymentMethod,
+        submissionId,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(PAYMENT_PENDING_KEY, JSON.stringify(pendingData));
+    } catch (error) {
+      console.error('Failed to save payment pending status:', error);
+    }
+  };
+
+  // Clear all saved progress
+  const clearProgress = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PAYMENT_PENDING_KEY);
+  };
+
+  // Resume with existing submission ID
+  const handleResumeRegistration = async () => {
+    if (!resumeId.trim()) {
+      toast.error('Please enter a valid submission ID');
       return;
     }
 
-    setLoading(true);
-    
-    // Simulate registration
-    setTimeout(() => {
-      toast.success("Registration submitted successfully! You will be contacted for verification.");
-      setLoading(false);
-      // Reset form or redirect
-    }, 2000);
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/proprietors/registration/${resumeId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error('Submission ID not found');
+      }
+
+      const result = await response.json();
+      
+      // Restore the registration data and determine current step
+      const restoredData: RegistrationData = {
+        submissionId: result.proprietor.submissionId,
+        personalInfo: result.proprietor,
+        schoolInfo: result.school,
+      };
+
+      setRegistrationData(restoredData);
+      saveProgress(restoredData);
+      
+      // Determine which step to show based on completion
+      if (result.isComplete) {
+        toast.info('Registration already completed');
+        setCurrentStep(3);
+      } else {
+        setCurrentStep(result.currentStep || 2);
+      }
+      
+      setShowResumeDialog(false);
+      toast.success('Registration progress loaded successfully');
+    } catch (error) {
+      toast.error('Failed to load registration. Please check your submission ID.');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const steps = [
+    { number: 1, title: 'Personal Information', description: 'Basic details and NAPPS participation' },
+    { number: 2, title: 'School Information', description: 'School details and enrollment data' },
+    { number: 3, title: 'Payment & Verification', description: 'Payment method and approval status' }
+  ];
+
+  const handleStep1Submit = async (data: any) => {
+    setIsSubmitting(true);
+    try {
+      // Save Step 1 data and get submission ID
+      const response = await fetch(`${API_BASE_URL}/proprietors/registration/step1`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (response.status === 409) {
+          // Conflict - email or phone already exists
+          const message = errorData.message || 'Email or phone number already registered';
+          toast.error(message, {
+            description: 'If you already started registration, please use "Resume Registration" option',
+            duration: 5000,
+          });
+          throw new Error(message);
+        }
+        
+        throw new Error(errorData.message || 'Failed to save personal information');
+      }
+
+      const result = await response.json();
+      const updatedData = {
+        ...registrationData,
+        personalInfo: data,
+        submissionId: result.submissionId
+      };
+      
+      setRegistrationData(updatedData);
+      saveProgress(updatedData);
+
+      toast.success('Personal information saved successfully', {
+        description: `Submission ID: ${result.submissionId}`,
+        duration: 5000,
+      });
+      setCurrentStep(2);
+    } catch (error: any) {
+      if (error.message.includes('already registered')) {
+        // Already shown detailed toast above
+        return;
+      }
+      toast.error('Failed to save personal information');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStep2Submit = async (data: any) => {
+    setIsSubmitting(true);
+    try {
+      // Separate enrollment fields from school info fields
+      const enrollmentFields = [
+        'kg1Male', 'kg1Female', 'kg2Male', 'kg2Female',
+        'eccdMale', 'eccdFemale', 'nursery1Male', 'nursery1Female',
+        'nursery2Male', 'nursery2Female', 'primary1Male', 'primary1Female',
+        'primary2Male', 'primary2Female', 'primary3Male', 'primary3Female',
+        'primary4Male', 'primary4Female', 'primary5Male', 'primary5Female',
+        'primary6Male', 'primary6Female', 'jss1Male', 'jss1Female',
+        'jss2Male', 'jss2Female', 'jss3Male', 'jss3Female',
+        'ss1Male', 'ss1Female', 'ss2Male', 'ss2Female',
+        'ss3Male', 'ss3Female'
+      ];
+
+      // Extract enrollment data
+      const enrollment: any = {};
+      const schoolInfo: any = {};
+
+      Object.keys(data).forEach(key => {
+        if (enrollmentFields.includes(key)) {
+          // Include enrollment field if it has a value (including 0)
+          // Only exclude undefined, null, and empty string
+          if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+            enrollment[key] = Number(data[key]);
+          }
+        } else {
+          schoolInfo[key] = data[key];
+        }
+      });
+
+      // Structure the payload according to backend DTO
+      const payload = {
+        ...schoolInfo,
+        submissionId: registrationData.submissionId,
+        // Only include enrollment if there are enrollment fields
+        ...(Object.keys(enrollment).length > 0 && { enrollment })
+      };
+
+      // Save Step 2 data with submission ID
+      const response = await fetch(`${API_BASE_URL}/proprietors/registration/step2`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to save school information');
+      }
+
+      const updatedData = {
+        ...registrationData,
+        schoolInfo: data
+      };
+      
+      setRegistrationData(updatedData);
+      saveProgress(updatedData);
+
+      toast.success('School information saved successfully');
+      setCurrentStep(3);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save school information');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStep3Submit = async (data: any) => {
+    setIsSubmitting(true);
+    try {
+      const { paymentMethod } = data;
+
+      if (paymentMethod === 'online') {
+        // Handle online payment - initiate Paystack payment
+        const response = await fetch(`${API_BASE_URL}/proprietors/registration/step3`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentMethod: 'online',
+            submissionId: registrationData.submissionId,
+            finalSubmit: false // Don't finalize yet, waiting for payment
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to initiate payment');
+        }
+
+        const result = await response.json();
+        
+        // Save progress and payment pending status before redirecting
+        const updatedData = {
+          ...registrationData,
+          paymentInfo: data,
+          paymentPending: true,
+          paymentMethod: 'online' as const
+        };
+        
+        saveProgress(updatedData);
+        savePaymentPending('online', registrationData.submissionId!);
+        
+        // Check if simulation mode
+        if (result.payment?.simulationMode) {
+          toast.success('Redirecting to simulated payment...', {
+            description: 'Test payment mode for authorized personnel',
+            duration: 3000
+          });
+          
+          setTimeout(() => {
+            window.location.href = result.payment.paymentUrl;
+          }, 500);
+        }
+        // Redirect to Paystack payment page or initialize payment
+        else if (result.paymentUrl) {
+          toast.success('Redirecting to payment gateway...', {
+            description: 'Your progress has been saved. You can return anytime.',
+            duration: 3000
+          });
+          
+          // Small delay to ensure storage is saved
+          setTimeout(() => {
+            window.location.href = result.paymentUrl;
+          }, 500);
+        } else {
+          throw new Error('Payment initialization failed');
+        }
+      } else {
+        // Handle bank transfer - submit without payment
+        const response = await fetch(`${API_BASE_URL}/proprietors/registration/step3`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentMethod: 'bank_transfer',
+            paymentStatus: 'Pending',
+            submissionId: registrationData.submissionId,
+            finalSubmit: true
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to complete registration');
+        }
+
+        const result = await response.json();
+        
+        // Save payment pending status for bank transfer
+        savePaymentPending('bank_transfer', registrationData.submissionId!);
+        
+        toast.success('Registration submitted successfully!', {
+          description: 'Redirecting to payment instructions...',
+          duration: 3000,
+        });
+        
+        // Redirect to payment status page with bank transfer info
+        setTimeout(() => {
+          navigate(`/payment/status?submissionId=${registrationData.submissionId}&method=bank_transfer`);
+        }, 1000);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to complete registration');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const progressPercentage = ((currentStep - 1) / (steps.length - 1)) * 100;
 
   return (
     <Layout>
-      <div className="py-8 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 flex items-center justify-center gap-2">
-                <UserPlus className="w-8 h-8 text-primary" />
-                New Proprietor Registration
-              </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Register your private school with NAPPS Nasarawa State. All fields marked with * are required.
-              </p>
-            </div>
-
-            <Card className="elegant-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="w-5 h-5" />
-                  Proprietor Information Form
-                </CardTitle>
-                <CardDescription>
-                  Please provide accurate information as this will be used for official records and communications.
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-8">
-                  {/* Personal Information */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-                      <UserPlus className="w-5 h-5" />
-                      Personal Information
-                    </h3>
-                    
-                    <div className="grid md:grid-cols-3 gap-4 mb-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name *</Label>
-                        <Input
-                          id="firstName"
-                          value={form.firstName}
-                          onChange={(e) => handleInputChange("firstName", e.target.value)}
-                          placeholder="Enter first name"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="middleName">Middle Name</Label>
-                        <Input
-                          id="middleName"
-                          value={form.middleName}
-                          onChange={(e) => handleInputChange("middleName", e.target.value)}
-                          placeholder="Enter middle name"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name *</Label>
-                        <Input
-                          id="lastName"
-                          value={form.lastName}
-                          onChange={(e) => handleInputChange("lastName", e.target.value)}
-                          placeholder="Enter last name"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <Label className="text-sm font-medium">Gender *</Label>
-                      <RadioGroup
-                        value={form.sex}
-                        onValueChange={(value) => handleInputChange("sex", value)}
-                        className="flex gap-6 mt-2"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Male" id="male" />
-                          <Label htmlFor="male">Male</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Female" id="female" />
-                          <Label htmlFor="female">Female</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="email" className="flex items-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          Email Address *
-                        </Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={form.email}
-                          onChange={(e) => handleInputChange("email", e.target.value)}
-                          placeholder="Enter email address"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="phone" className="flex items-center gap-2">
-                          <Phone className="w-4 h-4" />
-                          Phone Number *
-                        </Label>
-                        <Input
-                          id="phone"
-                          value={form.phone}
-                          onChange={(e) => handleInputChange("phone", e.target.value)}
-                          placeholder="+234 XXX XXX XXXX"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4 mt-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="positionHeld">Position Held in NAPPS</Label>
-                        <Input
-                          id="positionHeld"
-                          value={form.positionHeld}
-                          onChange={(e) => handleInputChange("positionHeld", e.target.value)}
-                          placeholder="e.g., Treasurer, Secretary"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="awards">Awards/Recognition</Label>
-                        <Input
-                          id="awards"
-                          value={form.awards}
-                          onChange={(e) => handleInputChange("awards", e.target.value)}
-                          placeholder="Any awards or recognition received"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* School Information */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-                      <Building className="w-5 h-5" />
-                      School Information
-                    </h3>
-                    
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="schoolName">Primary School Name *</Label>
-                        <Input
-                          id="schoolName"
-                          value={form.schoolName}
-                          onChange={(e) => handleInputChange("schoolName", e.target.value)}
-                          placeholder="Enter main school name"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="schoolName2">Secondary School Name</Label>
-                        <Input
-                          id="schoolName2"
-                          value={form.schoolName2}
-                          onChange={(e) => handleInputChange("schoolName2", e.target.value)}
-                          placeholder="Enter second school name (if any)"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="address" className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          Address *
-                        </Label>
-                        <Input
-                          id="address"
-                          value={form.address}
-                          onChange={(e) => handleInputChange("address", e.target.value)}
-                          placeholder="Enter street address"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="addressLine2">Address Line 2</Label>
-                        <Input
-                          id="addressLine2"
-                          value={form.addressLine2}
-                          onChange={(e) => handleInputChange("addressLine2", e.target.value)}
-                          placeholder="Enter additional address info"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="lga">Local Government Area *</Label>
-                        <Input
-                          id="lga"
-                          value={form.lga}
-                          onChange={(e) => handleInputChange("lga", e.target.value)}
-                          placeholder="Select or enter LGA"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="aeqeoZone">AEQEO Zone *</Label>
-                        <Input
-                          id="aeqeoZone"
-                          value={form.aeqeoZone}
-                          onChange={(e) => handleInputChange("aeqeoZone", e.target.value)}
-                          placeholder="Enter AEQEO zone"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4 mt-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="yearOfEstablishment">Year of Establishment</Label>
-                        <Input
-                          id="yearOfEstablishment"
-                          type="number"
-                          min="1900"
-                          max={new Date().getFullYear()}
-                          value={form.yearOfEstablishment}
-                          onChange={(e) => handleInputChange("yearOfEstablishment", e.target.value)}
-                          placeholder="e.g., 2010"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="yearOfApproval">Year of Approval</Label>
-                        <Input
-                          id="yearOfApproval"
-                          type="number"
-                          min="1900"
-                          max={new Date().getFullYear()}
-                          value={form.yearOfApproval}
-                          onChange={(e) => handleInputChange("yearOfApproval", e.target.value)}
-                          placeholder="e.g., 2011"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4 mt-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="typeOfSchool">Type of School</Label>
-                        <Input
-                          id="typeOfSchool"
-                          value={form.typeOfSchool}
-                          onChange={(e) => handleInputChange("typeOfSchool", e.target.value)}
-                          placeholder="e.g., Faith-Based, Secular"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="ownership">Ownership</Label>
-                        <Input
-                          id="ownership"
-                          value={form.ownership}
-                          onChange={(e) => handleInputChange("ownership", e.target.value)}
-                          placeholder="e.g., Individual, Corporate"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4 mt-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="gpsLatitude">GPS Latitude</Label>
-                        <Input
-                          id="gpsLatitude"
-                          type="number"
-                          step="any"
-                          value={form.gpsLatitude}
-                          onChange={(e) => handleInputChange("gpsLatitude", e.target.value)}
-                          placeholder="e.g., 8.533000"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="gpsLongitude">GPS Longitude</Label>
-                        <Input
-                          id="gpsLongitude"
-                          type="number"
-                          step="any"
-                          value={form.gpsLongitude}
-                          onChange={(e) => handleInputChange("gpsLongitude", e.target.value)}
-                          placeholder="e.g., 8.483000"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Submit Button */}
-                  <div className="flex justify-center pt-4">
-                    <Button 
-                      type="submit" 
-                      variant="government" 
-                      size="lg"
-                      loading={loading}
-                      className="w-full md:w-auto min-w-[200px]"
+      <div className="py-6 sm:py-8 bg-muted/30 min-h-screen">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="max-w-5xl mx-auto">
+            {/* Resume Registration Dialog */}
+            {showResumeDialog && (
+              <Card className="mb-6 border-2 border-primary shadow-lg">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-primary" />
+                    Resume Registration
+                  </CardTitle>
+                  <CardDescription>
+                    We found a saved registration in progress. Would you like to continue?
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      onClick={() => {
+                        setShowResumeDialog(false);
+                        if (registrationData.submissionId) {
+                          setResumeId(registrationData.submissionId);
+                          handleResumeRegistration();
+                        }
+                      }}
+                      className="flex-1"
+                      disabled={isSubmitting}
                     >
-                      <UserPlus className="w-5 h-5" />
-                      Submit Registration
+                      Continue Saved Registration
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setShowResumeDialog(false);
+                        clearProgress();
+                        setRegistrationData({});
+                        setCurrentStep(1);
+                      }}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Start New Registration
                     </Button>
                   </div>
-                </form>
+                  
+                  <div className="pt-3 border-t">
+                    <Label htmlFor="resume-id" className="text-xs">
+                      Or enter a different Submission ID:
+                    </Label>
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        id="resume-id"
+                        placeholder="Enter submission ID"
+                        value={resumeId}
+                        onChange={(e) => setResumeId(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={handleResumeRegistration}
+                        disabled={isSubmitting || !resumeId.trim()}
+                        size="sm"
+                      >
+                        Load
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Header */}
+            <div className="text-center mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4 flex items-center justify-center gap-2 flex-wrap">
+                <UserPlus className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                <span>New Proprietor Registration</span>
+              </h1>
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
+                Complete all three steps to register your school with NAPPS Nasarawa State
+              </p>
+              {!showResumeDialog && (
+                <Button
+                  variant="link"
+                  onClick={() => setShowResumeDialog(true)}
+                  className="mt-2 text-xs sm:text-sm"
+                >
+                  Already started? Resume Registration
+                </Button>
+              )}
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mb-6 sm:mb-8">
+              <Progress value={progressPercentage} className="h-2 mb-4" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                {steps.map((step) => (
+                  <div
+                    key={step.number}
+                    className={`flex items-start gap-3 p-3 rounded-lg transition-all ${
+                      currentStep === step.number 
+                        ? 'opacity-100 bg-primary/5 border-2 border-primary' 
+                        : 'opacity-60 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex-shrink-0">
+                      {currentStep > step.number ? (
+                        <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
+                      ) : currentStep === step.number ? (
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs sm:text-sm font-bold">
+                          {step.number}
+                        </div>
+                      ) : (
+                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs sm:text-sm font-medium truncate ${
+                        currentStep === step.number ? 'text-primary' : 'text-foreground'
+                      }`}>
+                        {step.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                        {step.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Step Content */}
+            <Card className="elegant-shadow">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl md:text-2xl">
+                  Step {currentStep}: {steps[currentStep - 1].title}
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  {steps[currentStep - 1].description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                {currentStep === 1 && (
+                  <Step1PersonalInfo
+                    initialData={registrationData.personalInfo}
+                    onSubmit={handleStep1Submit}
+                    isSubmitting={isSubmitting}
+                  />
+                )}
+
+                {currentStep === 2 && (
+                  <Step2SchoolInfo
+                    initialData={registrationData.schoolInfo}
+                    onSubmit={handleStep2Submit}
+                    onBack={handleBack}
+                    isSubmitting={isSubmitting}
+                  />
+                )}
+
+                {currentStep === 3 && (
+                  <Step3PaymentInfo
+                    initialData={registrationData.paymentInfo}
+                    onSubmit={handleStep3Submit}
+                    onBack={handleBack}
+                    isSubmitting={isSubmitting}
+                  />
+                )}
               </CardContent>
             </Card>
+
+            {/* Help Text */}
+            <Alert className="mt-4 sm:mt-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs sm:text-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <span>
+                    <strong>Need help?</strong> Your progress is automatically saved locally. 
+                    {registrationData.submissionId && (
+                      <span className="block sm:inline sm:ml-1 mt-1 sm:mt-0">
+                        Your Submission ID: <code className="bg-muted px-1.5 py-0.5 rounded text-xs">{registrationData.submissionId}</code>
+                      </span>
+                    )}
+                  </span>
+                  {currentStep === 1 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowResumeDialog(true)}
+                      className="text-xs self-start sm:self-center"
+                    >
+                      Resume Registration
+                    </Button>
+                  )}
+                </div>
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
       </div>

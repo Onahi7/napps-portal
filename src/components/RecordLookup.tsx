@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Search, Phone, Mail, MapPin, Building, CreditCard, CheckCircle } from "lucide-react";
+import { Search, Phone, Mail, MapPin, Building, CreditCard, CheckCircle, Edit } from "lucide-react";
 import { toast } from "sonner";
+import { EditRecordDialog } from "./EditRecordDialog";
 
 interface ProprietorRecord {
   name: string;
@@ -127,34 +128,131 @@ const mockRecord: ProprietorRecord = {
 };
 
 export const RecordLookup = () => {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [record, setRecord] = useState<ProprietorRecord | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
-      toast.error("Please enter your phone number or email address");
+      toast.error("Please enter search criteria (email, phone, school name, or proprietor name)");
       return;
     }
 
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      if (searchTerm.includes("ahmed") || searchTerm.includes("803")) {
-        setRecord(mockRecord);
+    try {
+      // Determine search type and build query
+      let queryParam = '';
+      const trimmedTerm = searchTerm.trim();
+      
+      if (trimmedTerm.includes('@')) {
+        // Email search
+        queryParam = `email=${encodeURIComponent(trimmedTerm)}`;
+      } else if (/^\d+$/.test(trimmedTerm.replace(/[\s\-()]/g, ''))) {
+        // Phone number (contains only digits after removing formatting)
+        queryParam = `phone=${encodeURIComponent(trimmedTerm)}`;
+      } else {
+        // Text search - could be school name or proprietor name
+        // Try as general search term - backend will handle multiple fields
+        queryParam = `schoolName=${encodeURIComponent(trimmedTerm)}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/proprietors/lookup?${queryParam}`);
+      
+      if (!response.ok) {
+        throw new Error('Lookup failed');
+      }
+
+      const data = await response.json();
+      
+      console.log('API Response:', data); // Debug log
+      
+      if (data && data.length > 0) {
+        // Map API response to our interface
+        const proprietorData = data[0];
+        console.log('Proprietor Data:', proprietorData); // Debug log
+        
+        const mappedRecord: ProprietorRecord = {
+          name: `${proprietorData.firstName} ${proprietorData.middleName || ''} ${proprietorData.lastName}`.trim(),
+          sex: proprietorData.sex || 'Male',
+          email: proprietorData.email,
+          schoolName: proprietorData.schoolName ?? 'N/A',
+          schoolName2: proprietorData.schoolName2 ?? '',
+          address: proprietorData.schoolAddress ?? 'N/A',
+          phone: proprietorData.phone,
+          yearOfEstablishment: proprietorData.yearOfEstablishment?.toString() ?? 'N/A',
+          yearOfApproval: proprietorData.yearOfApproval?.toString() ?? 'N/A',
+          typeOfSchool: proprietorData.typeOfSchool ?? 'N/A',
+          categoryOfSchool: proprietorData.categoryOfSchool ?? 'N/A',
+          ownership: proprietorData.ownership ?? 'N/A',
+          registrationStatus: proprietorData.registrationStatus ?? 'pending',
+          approvalStatus: proprietorData.approvalStatus ?? 'pending',
+          gpsLongitude: proprietorData.gpsLongitude,
+          gpsLatitude: proprietorData.gpsLatitude,
+          nappsRegistered: proprietorData.nappsRegistered ?? 'Not Registered',
+          participationHistory: (proprietorData.participationHistory || []).join(' | '),
+          pupilsPresented2023: proprietorData.pupilsPresentedLastExam ?? 0,
+          awards: proprietorData.awards,
+          positionHeld: proprietorData.positionHeld,
+          clearingStatus: proprietorData.clearingStatus ?? 'pending',
+          paymentToBeMade: proprietorData.paymentMethod ?? 'DIGITAL CAPTURING',
+          paymentMethod: proprietorData.paymentMethod ?? 'Offline',
+          submissionId: proprietorData.submissionId ?? proprietorData._id,
+          submissionDate: new Date(proprietorData.createdAt).toLocaleString(),
+          submissionStatus: proprietorData.submissionStatus ?? 'submitted',
+          enrollment: {
+            kg1Male: 0,
+            kg1Female: 0,
+            kg2Male: 0,
+            kg2Female: 0,
+            nursery1Male: 0,
+            nursery1Female: 0,
+            nursery2Male: 0,
+            nursery2Female: 0,
+            nursery3Male: 0,
+            nursery3Female: 0,
+            primary1Male: 0,
+            primary1Female: 0,
+            primary2Male: 0,
+            primary2Female: 0,
+            primary3Male: 0,
+            primary3Female: 0,
+            primary4Male: 0,
+            primary4Female: 0,
+            primary5Male: 0,
+            primary5Female: 0,
+            primary6Male: 0,
+            primary6Female: 0,
+          },
+          amountDue: proprietorData.totalAmountDue || 0,
+        };
+        
+        setRecord(mappedRecord);
         toast.success("Record found successfully!");
       } else {
         setRecord(null);
         toast.error("No record found. Please check your details or register as a new user.");
       }
+    } catch (error) {
+      console.error('Search error:', error);
+      setRecord(null);
+      toast.error("Failed to search. Please try again.");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   const handlePayment = () => {
     toast.info("Redirecting to Paystack for secure payment...");
     // Payment integration will be implemented here
+  };
+
+  const handleEditSuccess = () => {
+    // Refresh the record after successful edit
+    handleSearch();
   };
 
   return (
@@ -169,14 +267,14 @@ export const RecordLookup = () => {
                 Find Your Record
               </CardTitle>
               <CardDescription>
-                Enter your registered phone number or email address to access your proprietor record
+                Enter your phone number, email, school name, or proprietor name to access your record
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Input
                   type="text"
-                  placeholder="Phone number or email address"
+                  placeholder="Phone, email, school name, or proprietor name"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1"
@@ -198,24 +296,36 @@ export const RecordLookup = () => {
 
           {/* Record Display */}
           {record && (
-            <Card className="elegant-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-xl">
-                      {record.name}
-                    </CardTitle>
-                    <CardDescription>Submission ID: {record.submissionId}</CardDescription>
+            <>
+              <Card className="elegant-shadow">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <CardTitle className="text-xl">
+                        {record.name}
+                      </CardTitle>
+                      <CardDescription>Submission ID: {record.submissionId}</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        variant={record.registrationStatus === 'Registered' ? 'default' : 'secondary'}
+                        className="text-sm"
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        {record.registrationStatus}
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditDialogOpen(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit Record
+                      </Button>
+                    </div>
                   </div>
-                  <Badge 
-                    variant={record.registrationStatus === 'Registered' ? 'default' : 'secondary'}
-                    className="text-sm"
-                  >
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    {record.registrationStatus}
-                  </Badge>
-                </div>
-              </CardHeader>
+                </CardHeader>
 
               <CardContent>
                 <div className="grid md:grid-cols-2 gap-8">
@@ -257,10 +367,19 @@ export const RecordLookup = () => {
                         <span className="font-medium ml-2">{record.nappsRegistered}</span>
                       </div>
 
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Participation:</span>
-                        <span className="font-medium ml-2">{record.participationHistory}</span>
-                      </div>
+                      {record.participationHistory && record.participationHistory.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="text-sm text-muted-foreground">Participation History:</span>
+                          <div className="text-sm bg-muted/50 rounded-md p-3 space-y-1">
+                            {record.participationHistory.split('|').map((entry, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <CheckCircle className="w-3 h-3 text-green-600" />
+                                <span className="font-medium">{entry.trim()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -338,6 +457,15 @@ export const RecordLookup = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Edit Dialog */}
+            <EditRecordDialog
+              open={editDialogOpen}
+              onOpenChange={setEditDialogOpen}
+              record={record}
+              onSuccess={handleEditSuccess}
+            />
+          </>
           )}
         </div>
       </div>

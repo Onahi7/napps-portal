@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, UserPlus, Shield, CreditCard } from "lucide-react";
+import { Search, UserPlus, Shield, CreditCard, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export const HeroSection = () => {
@@ -36,6 +36,17 @@ export const HeroSection = () => {
               >
                 <UserPlus className="w-5 h-5" />
                 New Registration
+              </Button>
+            </Link>
+
+            <Link to="/proprietor-login">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="w-full sm:w-auto bg-accent/20 border-accent/40 text-white hover:bg-accent/30"
+              >
+                <LogIn className="w-5 h-5" />
+                Proprietor Login
               </Button>
             </Link>
           </div>
