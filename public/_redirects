@@ -1,0 +1,8 @@
+# Netlify redirects for SPA (Single Page Application)
+# All routes should serve index.html and let React Router handle the routing
+
+# API calls should not be redirected
+/api/* https://api.nappsnasarawa.com/api/v1/:splat 200
+
+# All other routes serve index.html for client-side routing
+/*    /index.html   200

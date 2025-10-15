@@ -22,7 +22,7 @@ export default function Admin() {
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'import' | 'settings'>('dashboard');
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
 
   // Check if user is already logged in
   useState(() => {
