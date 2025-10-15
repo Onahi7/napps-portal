@@ -16,6 +16,14 @@ export const uploadToCloudinary = async (
   file: File | Blob,
   folder?: string
 ): Promise<CloudinaryUploadResponse> => {
+  // Validate environment variables
+  if (!CLOUDINARY_CLOUD_NAME) {
+    throw new Error('Cloudinary cloud name is not configured. Please set VITE_CLOUDINARY_CLOUD_NAME in .env');
+  }
+  if (!CLOUDINARY_UPLOAD_PRESET) {
+    throw new Error('Cloudinary upload preset is not configured. Please set VITE_CLOUDINARY_UPLOAD_PRESET in .env');
+  }
+
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -24,25 +32,43 @@ export const uploadToCloudinary = async (
     formData.append('folder', folder);
   }
 
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-    {
-      method: 'POST',
-      body: formData,
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Cloudinary upload error:', errorData);
+      throw new Error(
+        errorData.error?.message || 
+        `Failed to upload image to Cloudinary: ${response.status} ${response.statusText}`
+      );
     }
-  );
 
-  if (!response.ok) {
-    throw new Error('Failed to upload image to Cloudinary');
+    return await response.json();
+  } catch (error) {
+    console.error('Upload error:', error);
+    throw error;
   }
-
-  return await response.json();
 };
 
 export const uploadBase64ToCloudinary = async (
   base64String: string,
   folder?: string
 ): Promise<CloudinaryUploadResponse> => {
+  // Validate environment variables
+  if (!CLOUDINARY_CLOUD_NAME) {
+    throw new Error('Cloudinary cloud name is not configured. Please set VITE_CLOUDINARY_CLOUD_NAME in .env');
+  }
+  if (!CLOUDINARY_UPLOAD_PRESET) {
+    throw new Error('Cloudinary upload preset is not configured. Please set VITE_CLOUDINARY_UPLOAD_PRESET in .env');
+  }
+
   const formData = new FormData();
   formData.append('file', base64String);
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -51,19 +77,29 @@ export const uploadBase64ToCloudinary = async (
     formData.append('folder', folder);
   }
 
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-    {
-      method: 'POST',
-      body: formData,
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Cloudinary upload error:', errorData);
+      throw new Error(
+        errorData.error?.message || 
+        `Failed to upload image to Cloudinary: ${response.status} ${response.statusText}`
+      );
     }
-  );
 
-  if (!response.ok) {
-    throw new Error('Failed to upload image to Cloudinary');
+    return await response.json();
+  } catch (error) {
+    console.error('Upload error:', error);
+    throw error;
   }
-
-  return await response.json();
 };
 
 export const deleteFromCloudinary = async (publicId: string): Promise<void> => {

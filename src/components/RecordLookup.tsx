@@ -134,6 +134,7 @@ export const RecordLookup = () => {
   const [loading, setLoading] = useState(false);
   const [record, setRecord] = useState<ProprietorRecord | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
@@ -151,8 +152,8 @@ export const RecordLookup = () => {
       if (trimmedTerm.includes('@')) {
         // Email search
         queryParam = `email=${encodeURIComponent(trimmedTerm)}`;
-      } else if (/^\d+$/.test(trimmedTerm.replace(/[\s\-()]/g, ''))) {
-        // Phone number (contains only digits after removing formatting)
+      } else if (/^[\d\s\-()\+]+$/.test(trimmedTerm)) {
+        // Phone number (contains only digits, spaces, dashes, parentheses, or + for country code)
         queryParam = `phone=${encodeURIComponent(trimmedTerm)}`;
       } else {
         // Text search - could be school name or proprietor name
@@ -245,9 +246,68 @@ export const RecordLookup = () => {
     }
   };
 
-  const handlePayment = () => {
-    toast.info("Redirecting to Paystack for secure payment...");
-    // Payment integration will be implemented here
+  const handlePayment = async () => {
+    if (!record) {
+      toast.error("No record found. Please search first.");
+      return;
+    }
+
+    if (record.clearingStatus === 'Cleared' || record.clearingStatus === 'cleared') {
+      toast.info("Your payment has already been cleared.");
+      return;
+    }
+
+    setPaymentLoading(true);
+    
+    try {
+      // Create payment for the proprietor
+      const response = await fetch(`${API_BASE_URL}/payments/initiate-lookup-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          submissionId: record.submissionId,
+          email: record.email,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to initiate payment');
+      }
+
+      const result = await response.json();
+
+      // Check if simulation mode
+      if (result.simulationMode || result.payment?.simulationMode) {
+        toast.success('Redirecting to payment...', {
+          description: 'Complete your payment to clear dues',
+          duration: 2000
+        });
+        
+        setTimeout(() => {
+          window.location.href = result.paymentUrl || result.payment?.paymentUrl;
+        }, 500);
+      }
+      // Redirect to Paystack payment page
+      else if (result.paymentUrl) {
+        toast.success('Redirecting to payment gateway...', {
+          description: 'Complete your payment securely',
+          duration: 2000
+        });
+        
+        setTimeout(() => {
+          window.location.href = result.paymentUrl;
+        }, 500);
+      } else {
+        throw new Error('Payment initialization failed');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error("Failed to initiate payment. Please try again.");
+    } finally {
+      setPaymentLoading(false);
+    }
   };
 
   const handleEditSuccess = () => {
@@ -448,9 +508,10 @@ export const RecordLookup = () => {
                         variant="action"
                         size="lg"
                         className="w-full mt-4"
+                        disabled={paymentLoading || record.clearingStatus === 'Cleared' || record.clearingStatus === 'cleared'}
                       >
                         <CreditCard className="w-4 h-4" />
-                        Pay Now with Paystack
+                        {paymentLoading ? 'Processing...' : record.clearingStatus === 'Cleared' || record.clearingStatus === 'cleared' ? 'Payment Cleared' : 'Pay Now'}
                       </Button>
                     </div>
                   </div>

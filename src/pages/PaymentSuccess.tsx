@@ -125,15 +125,18 @@ export const PaymentSuccess = () => {
           {/* Header with Logo */}
           <div className="text-center mb-8 border-b-2 border-green-600 pb-6">
             <div className="flex items-center justify-center gap-4 mb-4">
-              <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-2xl">
-                NAPPS
+              <div className="w-24 h-24 bg-gradient-to-br from-green-700 to-green-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg border-4 border-white">
+                <div className="text-center">
+                  <div className="text-2xl">NAPPS</div>
+                  <div className="text-xs">NIGERIA</div>
+                </div>
               </div>
             </div>
             <h1 className="text-3xl font-bold text-green-700 mb-2">
               NASARAWA STATE BRANCH
             </h1>
             <h2 className="text-xl font-semibold text-gray-700">
-              2025/2026 DATA CAPTURING
+              2025/2026 NAPPS NASARAWA DUES
             </h2>
             <p className="text-lg text-gray-600 mt-2">PAYMENT RECEIPT</p>
           </div>
