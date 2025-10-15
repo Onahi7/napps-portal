@@ -36,6 +36,7 @@ interface ProprietorRecord {
   submissionId: string;
   submissionDate: string;
   submissionStatus: string;
+  id?: string; // MongoDB _id
   // Enrollment data
   enrollment: {
     kg1Male: number;
@@ -204,6 +205,7 @@ export const RecordLookup = () => {
           submissionId: proprietorData.submissionId ?? proprietorData._id,
           submissionDate: new Date(proprietorData.createdAt).toLocaleString(),
           submissionStatus: proprietorData.submissionStatus ?? 'submitted',
+          id: proprietorData._id, // Store MongoDB _id
           enrollment: {
             kg1Male: 0,
             kg1Female: 0,
@@ -267,7 +269,7 @@ export const RecordLookup = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          submissionId: record.submissionId,
+          submissionId: record.id || record.submissionId, // Use MongoDB _id first, fallback to submissionId
           email: record.email,
         }),
       });
