@@ -64,7 +64,7 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
       }
 
       try {
-        const response = await fetch('http://localhost:3001/api/v1/proprietors', {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors`, {
           headers: {
             'Authorization': `Bearer ${authToken}`,
           },

@@ -93,10 +93,10 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
 
       try {
         const [paymentsRes, statsRes] = await Promise.all([
-          fetch('http://localhost:3001/api/v1/payments', {
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/payments`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
           }),
-          fetch('http://localhost:3001/api/v1/payments/stats', {
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/stats`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
           })
         ]);
