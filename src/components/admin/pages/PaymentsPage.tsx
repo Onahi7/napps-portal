@@ -34,7 +34,12 @@ import {
   MoreHorizontal,
   Download,
   Filter,
-  Search
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  RefreshCw
 } from 'lucide-react';
 
 interface Payment {
@@ -73,6 +78,18 @@ interface PaymentStats {
   revenueChange?: string;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+interface PaymentsResponse {
+  data: Payment[];
+  pagination: PaginationInfo;
+}
+
 interface PaymentsPageProps {
   authToken: string | null;
 }
@@ -83,49 +100,61 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [methodFilter, setMethodFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+  });
 
-  useEffect(() => {
-    const fetchPaymentsData = async () => {
-      if (!authToken) {
-        setLoading(false);
-        return;
+  const fetchPaymentsData = async (page: number = 1, limit: number = 10) => {
+    if (!authToken) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Build query parameters
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      });
+
+      // Add filters if they exist
+      if (statusFilter !== 'all') {
+        queryParams.append('status', statusFilter);
       }
 
-      try {
-        const [paymentsRes, statsRes] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/payments`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-          }),
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/stats`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-          })
-        ]);
-        
-        if (paymentsRes.ok) {
-          const paymentsData = await paymentsRes.json();
-          // Backend returns { data: [], pagination: {} }
-          setPayments(paymentsData.data || []);
-        }
-        
-        if (statsRes.ok) {
-          const statsData = await statsRes.json();
-          setStats(statsData);
-        } else {
-          // Set default stats if endpoint doesn't exist yet
-          setStats({
-            totalRevenue: 0,
-            onlinePayments: 0,
-            onlineCount: 0,
-            pendingVerification: 0,
-            pendingCount: 0,
-            completedToday: 0,
-            completedCount: 0
-          });
-        }
-      } catch (error) {
-        console.error('Failed to fetch payments data:', error);
-        // Set empty data on error
-        setPayments([]);
+      const [paymentsRes, statsRes] = await Promise.all([
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/payments?${queryParams}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/stats`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        })
+      ]);
+      
+      if (paymentsRes.ok) {
+        const paymentsData: PaymentsResponse = await paymentsRes.json();
+        setPayments(paymentsData.data || []);
+        setPagination(paymentsData.pagination || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          pages: 0,
+        });
+      }
+      
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setStats(statsData);
+      } else {
+        // Set default stats if endpoint doesn't exist yet
         setStats({
           totalRevenue: 0,
           onlinePayments: 0,
@@ -135,13 +164,49 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
           completedToday: 0,
           completedCount: 0
         });
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch payments data:', error);
+      // Set empty data on error
+      setPayments([]);
+      setPagination({
+        page: 1,
+        limit: 10,
+        total: 0,
+        pages: 0,
+      });
+      setStats({
+        totalRevenue: 0,
+        onlinePayments: 0,
+        onlineCount: 0,
+        pendingVerification: 0,
+        pendingCount: 0,
+        completedToday: 0,
+        completedCount: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchPaymentsData();
-  }, [authToken]);
+  useEffect(() => {
+    fetchPaymentsData(pagination.page, pagination.limit);
+  }, [authToken, statusFilter]);
+
+  // Handle page changes
+  const handlePageChange = (newPage: number) => {
+    fetchPaymentsData(newPage, pagination.limit);
+  };
+
+  // Handle page size changes
+  const handlePageSizeChange = (newLimit: number) => {
+    fetchPaymentsData(1, newLimit);
+  };
+
+  // Handle refresh
+  const handleRefresh = () => {
+    fetchPaymentsData(pagination.page, pagination.limit);
+  };
 
   const statsConfig = [
     {
@@ -204,13 +269,17 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
   };
 
   const filteredPayments = payments.filter((payment) => {
-    const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
+    const matchesSearch = searchTerm === '' || 
+      payment.proprietorId?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.proprietorId?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.schoolId?.schoolName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.reference?.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesMethod = methodFilter === 'all' || (
-      methodFilter === 'online' && payment.reference.startsWith('PAY_')
-    ) || (
-      methodFilter === 'online' && payment.reference.startsWith('SIM_')
+      methodFilter === 'online' && (payment.reference.startsWith('PAY_') || payment.reference.startsWith('SIM_'))
     );
-    return matchesStatus && matchesMethod;
+    
+    return matchesSearch && matchesMethod;
   });
 
   return (
@@ -221,10 +290,20 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
           <h1 className="text-2xl font-bold text-gray-900">Payment Management</h1>
           <p className="text-gray-600 mt-1">Monitor and manage all payment transactions</p>
         </div>
-        <Button>
-          <Download className="w-4 h-4 mr-2" />
-          Export Report
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button>
+            <Download className="w-4 h-4 mr-2" />
+            Export Report
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -267,7 +346,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
         <CardHeader>
           <CardTitle>Payment Transactions</CardTitle>
           <CardDescription>
-            {loading ? 'Loading...' : `${filteredPayments.length} transaction${filteredPayments.length !== 1 ? 's' : ''} found`}
+            {loading ? 'Loading...' : `Showing ${Math.min(pagination.limit, filteredPayments.length)} of ${pagination.total} total transactions`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -277,6 +356,8 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
               <Input
                 placeholder="Search by proprietor, school, or reference..."
                 className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -339,9 +420,14 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                       <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                      <p className="font-medium">No payment records found</p>
+                      <p className="font-medium">
+                        {pagination.total === 0 ? 'No payment records found' : 'No payments match your filters'}
+                      </p>
                       <p className="text-sm">
-                        Payments will appear here once proprietors complete registration and payment.
+                        {pagination.total === 0 
+                          ? 'Payments will appear here once proprietors complete registration and payment.'
+                          : 'Try adjusting your search or filter criteria.'
+                        }
                       </p>
                     </TableCell>
                   </TableRow>
@@ -392,17 +478,69 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-gray-600">
-              Showing {filteredPayments.length > 0 ? '1' : '0'} to {filteredPayments.length} of {payments.length} total results
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm" disabled>
-                Next
-              </Button>
+          <div className="flex items-center justify-between mt-6">
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-gray-600">
+                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Rows per page:</span>
+                <Select 
+                  value={pagination.limit.toString()} 
+                  onValueChange={(value) => handlePageSizeChange(parseInt(value))}
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                Page {pagination.page} of {pagination.pages}
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(1)}
+                  disabled={pagination.page === 1 || loading}
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page === 1 || loading}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={pagination.page === pagination.pages || loading}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.pages)}
+                  disabled={pagination.page === pagination.pages || loading}
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
