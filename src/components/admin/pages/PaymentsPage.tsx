@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -108,7 +108,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
     pages: 0,
   });
 
-  const fetchPaymentsData = async (page: number = 1, limit: number = 10) => {
+  const fetchPaymentsData = useCallback(async (page: number = 1, limit: number = 10) => {
     if (!authToken) {
       setLoading(false);
       return;
@@ -129,6 +129,11 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
       if (statusFilter !== 'all') {
         queryParams.append('status', statusFilter);
       }
+
+      // Add search parameter if exists (remove this for now to simplify)
+      // if (searchTerm.trim()) {
+      //   queryParams.append('search', searchTerm.trim());
+      // }
 
       const [paymentsRes, statsRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_BASE_URL}/payments?${queryParams}`, {
@@ -187,11 +192,11 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authToken, statusFilter]);
 
   useEffect(() => {
-    fetchPaymentsData(pagination.page, pagination.limit);
-  }, [authToken, statusFilter]);
+    fetchPaymentsData(1, 10); // Reset to first page when filters change
+  }, [fetchPaymentsData]);
 
   // Handle page changes
   const handlePageChange = (newPage: number) => {
@@ -207,6 +212,19 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
   const handleRefresh = () => {
     fetchPaymentsData(pagination.page, pagination.limit);
   };
+
+  // Handle search with client-side filtering for immediate feedback
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+  };
+
+  // Client-side search filtering for immediate feedback
+  const filteredPayments = searchTerm === '' ? payments : payments.filter((payment) => {
+    return payment.proprietorId?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.proprietorId?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.schoolId?.schoolName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.reference?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const statsConfig = [
     {
@@ -267,20 +285,6 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
       </Badge>
     );
   };
-
-  const filteredPayments = payments.filter((payment) => {
-    const matchesSearch = searchTerm === '' || 
-      payment.proprietorId?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.proprietorId?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.schoolId?.schoolName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.reference?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesMethod = methodFilter === 'all' || (
-      methodFilter === 'online' && (payment.reference.startsWith('PAY_') || payment.reference.startsWith('SIM_'))
-    );
-    
-    return matchesSearch && matchesMethod;
-  });
 
   return (
     <div className="space-y-6">
@@ -357,7 +361,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                 placeholder="Search by proprietor, school, or reference..."
                 className="pl-10"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
