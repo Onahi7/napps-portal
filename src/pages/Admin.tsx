@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,13 +25,13 @@ export default function Admin() {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
 
   // Check if user is already logged in
-  useState(() => {
+  useEffect(() => {
     const token = localStorage.getItem('admin_token');
     if (token) {
       setAuthToken(token);
       setIsAuthenticated(true);
     }
-  });
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

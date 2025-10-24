@@ -137,12 +137,25 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
 
       const [paymentsRes, statsRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_BASE_URL}/payments?${queryParams}`, {
-          headers: { 'Authorization': `Bearer ${authToken}` }
+          headers: { 
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
         }),
         fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/stats`, {
-          headers: { 'Authorization': `Bearer ${authToken}` }
+          headers: { 
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
         })
       ]);
+      
+      // Check for authentication errors
+      if (paymentsRes.status === 401 || statsRes.status === 401) {
+        console.error('Authentication failed - token may be expired');
+        // Could trigger logout or token refresh here
+        throw new Error('Authentication failed. Please log in again.');
+      }
       
       if (paymentsRes.ok) {
         const paymentsData: PaymentsResponse = await paymentsRes.json();
