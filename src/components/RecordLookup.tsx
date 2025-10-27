@@ -36,6 +36,7 @@ interface ProprietorRecord {
   submissionId: string;
   submissionDate: string;
   submissionStatus: string;
+  chapters?: string[]; // NAPPS chapters assigned to proprietor
   id?: string; // MongoDB _id
   // Enrollment data
   enrollment: {

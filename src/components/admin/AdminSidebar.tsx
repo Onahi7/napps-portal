@@ -9,7 +9,8 @@ import {
   Bell,
   School,
   ExternalLink,
-  DollarSign
+  DollarSign,
+  BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 
 interface SidebarProps {
   currentPage: string;
-  onNavigate: (page: 'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'import' | 'settings') => void;
+  onNavigate: (page: 'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'chapters' | 'import' | 'settings') => void;
 }
 
 const navigationItems = [
@@ -52,6 +53,12 @@ const navigationItems = [
         icon: School, 
         page: 'schools' as const,
         badge: '485'
+      },
+      { 
+        name: 'Chapters', 
+        icon: BookOpen, 
+        page: 'chapters' as const,
+        badge: null
       },
     ]
   },
@@ -106,11 +113,11 @@ const navigationItems = [
 export function AdminSidebar({ currentPage, onNavigate }: SidebarProps) {
   const handleItemClick = (page: string) => {
     // Only navigate for implemented pages
-    const validPages = ['dashboard', 'proprietors', 'payments', 'fees', 'import', 'settings'] as const;
+    const validPages = ['dashboard', 'proprietors', 'payments', 'fees', 'chapters', 'import', 'settings'] as const;
     type ValidPage = typeof validPages[number];
     
     if (validPages.includes(page as ValidPage)) {
-      onNavigate(page as 'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'import' | 'settings');
+      onNavigate(page as 'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'chapters' | 'import' | 'settings');
     }
   };
 

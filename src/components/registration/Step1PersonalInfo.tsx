@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card } from '@/components/ui/card';
 import { CameraCapture } from '@/components/ui/camera-capture';
 import { NASARAWA_LGAS, NasarawaLga } from '@/lib/nasarawaLgas';
+import { NAPPS_CHAPTERS } from '@/lib/constants/chapters';
 
 const step1Schema = z.object({
   firstName: z.string().min(2, 'First name is required'),
@@ -26,6 +27,7 @@ const step1Schema = z.object({
   sex: z.enum(['Male', 'Female'], { required_error: 'Please select your gender' }),
   email: z.string().email('Invalid email address'),
   phone: z.string().min(10, 'Phone number is required'),
+  chapters: z.array(z.enum(NAPPS_CHAPTERS)).optional(),
   passportPhoto: z.string().optional(),
   nappsRegistered: z.enum(['Not Registered', 'Registered', 'Registered with Certificate']).optional(),
   participationHistory: z.union([z.string(), z.array(z.string())]).optional(),
@@ -308,7 +310,39 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
         </div>
       </div>
 
-      {/* NAPPS Participation */}
+      {/* Chapters Assignment */}
+      <div className="space-y-4 pt-6 border-t">
+        <div>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">NAPPS Chapters</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Select the NAPPS chapters you belong to (optional)</p>
+        </div>
+
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Available Chapters</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-gray-50 rounded-lg border">
+            {NAPPS_CHAPTERS.map((chapter) => (
+              <div key={chapter} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`chapter-${chapter}`}
+                  {...register('chapters')}
+                  value={chapter}
+                />
+                <Label 
+                  htmlFor={`chapter-${chapter}`} 
+                  className="text-sm cursor-pointer"
+                >
+                  {chapter}
+                </Label>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            You can select multiple chapters. These can be updated later by an administrator.
+          </p>
+        </div>
+      </div>
+
+      {/* NAPPS Participation */
       <div className="space-y-4 pt-6 border-t">
         <div>
           <h3 className="text-base sm:text-lg font-semibold text-gray-900">NAPPS Participation</h3>

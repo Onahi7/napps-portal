@@ -14,13 +14,14 @@ import { ProprietorsPage } from "@/components/admin/pages/ProprietorsPage";
 import { ImportDataPage } from "@/components/admin/pages/ImportDataPage";
 import { PaymentsPage } from "@/components/admin/pages/PaymentsPage";
 import { FeesPage } from "@/components/admin/pages/FeesPage";
+import { ChaptersPage } from "@/components/admin/pages/ChaptersPage";
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'import' | 'settings'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'chapters' | 'import' | 'settings'>('dashboard');
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
 
@@ -93,6 +94,8 @@ export default function Admin() {
         return <PaymentsPage authToken={authToken} />;
       case 'fees':
         return <FeesPage authToken={authToken} />;
+      case 'chapters':
+        return <ChaptersPage authToken={authToken} />;
       case 'settings':
         return (
           <div className="space-y-6">
