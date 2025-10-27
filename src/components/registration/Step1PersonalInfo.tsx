@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card } from '@/components/ui/card';
 import { CameraCapture } from '@/components/ui/camera-capture';
 import { NASARAWA_LGAS, NasarawaLga } from '@/lib/nasarawaLgas';
-import { NAPPS_CHAPTERS } from '@/lib/constants/chapters';
+import { NAPPS_CHAPTERS } from '@/constants/napps-chapters';
 
 const step1Schema = z.object({
   firstName: z.string().min(2, 'First name is required'),
@@ -342,7 +342,7 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
         </div>
       </div>
 
-      {/* NAPPS Participation */
+      {/* NAPPS Participation */}
       <div className="space-y-4 pt-6 border-t">
         <div>
           <h3 className="text-base sm:text-lg font-semibold text-gray-900">NAPPS Participation</h3>
