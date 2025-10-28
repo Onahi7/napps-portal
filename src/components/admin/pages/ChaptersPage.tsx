@@ -85,14 +85,23 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
       }
 
       try {
-        // Fetch all proprietors without pagination, sorted by registration date
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors?limit=10000&sortBy=createdAt&sortOrder=desc`, {
+        // Fetch all proprietors sorted by registration date (newest first)
+        const params = new URLSearchParams({
+          page: '1',
+          limit: '1000',
+          sortBy: 'createdAt',
+          sortOrder: 'desc'
+        });
+        
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors?${params.toString()}`, {
           headers: {
             'Authorization': `Bearer ${authToken}`,
           },
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API Error:', errorText);
           throw new Error('Failed to fetch proprietors');
         }
 
@@ -107,7 +116,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
         console.error('Failed to fetch proprietors:', error);
         toast({
           title: "Error",
-          description: "Failed to fetch proprietors",
+          description: "Failed to fetch proprietors. Please try again.",
           variant: "destructive",
         });
         setProprietors([]);
