@@ -82,10 +82,12 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
     formState: { errors },
     watch,
     setValue,
-    control
+    control,
+    getValues
   } = useForm<Step1FormData>({
     resolver: zodResolver(step1Schema),
     defaultValues: initialData || {
+      chapters: [],
       nappsRegistered: 'Not Registered',
       timesParticipated: 0,
       pupilsPresentedLastExam: 0
@@ -313,31 +315,36 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
       {/* Chapters Assignment */}
       <div className="space-y-4 pt-6 border-t">
         <div>
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900">NAPPS Chapters</h3>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Select the NAPPS chapters you belong to (optional)</p>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">NAPPS Chapter</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Select the NAPPS chapter you belong to (required)</p>
         </div>
 
         <div className="space-y-3">
           <Label className="text-sm font-medium">Available Chapters</Label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-gray-50 rounded-lg border">
-            {NAPPS_CHAPTERS.map((chapter) => (
-              <div key={chapter} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`chapter-${chapter}`}
-                  {...register('chapters')}
-                  value={chapter}
-                />
-                <Label 
-                  htmlFor={`chapter-${chapter}`} 
-                  className="text-sm cursor-pointer"
-                >
-                  {chapter}
-                </Label>
-              </div>
-            ))}
-          </div>
+          <Controller
+            name="chapters"
+            control={control}
+            render={({ field }) => (
+              <Select
+                onValueChange={(value) => field.onChange(value ? [value] : [])}
+                value={field.value && field.value.length > 0 ? field.value[0] : ''}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select chapter" />
+                </SelectTrigger>
+                <SelectContent>
+                  {NAPPS_CHAPTERS.map((chapter) => (
+                    <SelectItem key={chapter} value={chapter}>
+                      {chapter}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
           <p className="text-xs text-muted-foreground">
-            You can select multiple chapters. These can be updated later by an administrator.
+            Select one chapter. This can be updated later by an administrator.
           </p>
         </div>
       </div>
