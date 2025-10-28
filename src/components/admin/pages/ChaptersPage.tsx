@@ -34,7 +34,11 @@ import {
   AlertCircle,
   MapPin,
   UserCheck,
-  Building
+  Building,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { NAPPS_CHAPTERS } from '@/constants/napps-chapters';
@@ -69,6 +73,8 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
   const [chapterFilter, setChapterFilter] = useState<string>('all');
   const [selectedProprietors, setSelectedProprietors] = useState<Set<string>>(new Set());
   const [bulkChapters, setBulkChapters] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Fetch proprietors
   useEffect(() => {
@@ -79,7 +85,8 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
       }
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors`, {
+        // Fetch all proprietors without pagination, sorted by registration date
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors?limit=10000&sortBy=createdAt&sortOrder=desc`, {
           headers: {
             'Authorization': `Bearer ${authToken}`,
           },
@@ -91,7 +98,11 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
 
         const data = await response.json();
         const proprietorsArray = Array.isArray(data) ? data : (data.data || data.proprietors || []);
-        setProprietors(proprietorsArray);
+        // Sort by createdAt in descending order (newest first)
+        const sortedProprietors = proprietorsArray.sort((a: Proprietor, b: Proprietor) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        setProprietors(sortedProprietors);
       } catch (error) {
         console.error('Failed to fetch proprietors:', error);
         toast({
@@ -124,6 +135,27 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
     return matchesSearch && matchesStatus && matchesChapter;
   });
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredProprietors.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedProprietors = filteredProprietors.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, chapterFilter]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (size: string) => {
+    setItemsPerPage(parseInt(size));
+    setCurrentPage(1);
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
       approved: { variant: 'default', label: 'Active' },
@@ -136,7 +168,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedProprietors(new Set(filteredProprietors.map(p => p._id)));
+      setSelectedProprietors(new Set(paginatedProprietors.map(p => p._id)));
     } else {
       setSelectedProprietors(new Set());
     }
@@ -400,7 +432,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
         <CardHeader>
           <CardTitle>All Proprietors</CardTitle>
           <CardDescription>
-            {loading ? 'Loading...' : `${filteredProprietors.length} proprietor${filteredProprietors.length !== 1 ? 's' : ''} found`}
+            {loading ? 'Loading...' : `Showing ${startIndex + 1}-${Math.min(endIndex, filteredProprietors.length)} of ${filteredProprietors.length} proprietor${filteredProprietors.length !== 1 ? 's' : ''}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -449,12 +481,13 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedProprietors.size === filteredProprietors.length && filteredProprietors.length > 0}
+                      checked={selectedProprietors.size === paginatedProprietors.length && paginatedProprietors.length > 0}
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
                   <TableHead>Proprietor</TableHead>
                   <TableHead>School</TableHead>
+                  <TableHead>Registration Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Current Chapters</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -472,9 +505,9 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
                       <TableCell><Skeleton className="h-8 w-16" /></TableCell>
                     </TableRow>
                   ))
-                ) : filteredProprietors.length === 0 ? (
+                ) : paginatedProprietors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                       <Users className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                       <p className="font-medium">No proprietors found</p>
                       <p className="text-sm">
@@ -485,7 +518,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredProprietors.map((proprietor) => (
+                  paginatedProprietors.map((proprietor) => (
                     <ProprietorRow
                       key={proprietor._id}
                       proprietor={proprietor}
@@ -499,6 +532,72 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination Controls */}
+          {!loading && filteredProprietors.length > 0 && (
+            <div className="flex items-center justify-between mt-6">
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-gray-600">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredProprietors.length)} of {filteredProprietors.length} results
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Rows per page:</span>
+                  <Select value={itemsPerPage.toString()} onValueChange={handlePageSizeChange}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronsLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronsRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -558,6 +657,15 @@ function ProprietorRow({ proprietor, selected, onSelect, onUpdateChapters, savin
           <Building className="w-3 h-3 text-gray-400" />
           <span className="text-sm">{proprietor.school?.name || 'N/A'}</span>
         </div>
+      </TableCell>
+      <TableCell>
+        <span className="text-sm text-gray-600">
+          {new Date(proprietor.createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          })}
+        </span>
       </TableCell>
       <TableCell>
         {getStatusBadge(proprietor.registrationStatus)}
