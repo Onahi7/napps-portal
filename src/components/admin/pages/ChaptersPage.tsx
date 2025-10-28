@@ -222,8 +222,8 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
 
     setSaving(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors/bulk-assign-chapters`, {
-        method: 'PUT',
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors/chapters/bulk-update`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
@@ -231,28 +231,40 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
         body: JSON.stringify({
           proprietorIds: Array.from(selectedProprietors),
           chapters: bulkChapters,
+          replace: false // Add to existing chapters instead of replacing
         }),
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Bulk update error:', errorText);
         throw new Error('Failed to assign chapters');
       }
 
       const result = await response.json();
       
-      // Update local state
-      setProprietors(proprietors.map(p => 
-        selectedProprietors.has(p._id) 
-          ? { ...p, chapters: [...new Set([...(p.chapters || []), ...bulkChapters])] }
-          : p
-      ));
+      // Refresh proprietors list to get updated data
+      const refreshResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors?page=1&limit=1000&sortBy=createdAt&sortOrder=desc`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+      
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json();
+        const proprietorsArray = Array.isArray(data) ? data : (data.data || data.proprietors || []);
+        const sortedProprietors = proprietorsArray.sort((a: Proprietor, b: Proprietor) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        setProprietors(sortedProprietors);
+      }
 
       setSelectedProprietors(new Set());
       setBulkChapters([]);
 
       toast({
         title: "Success",
-        description: `Chapters assigned to ${result.updated} proprietor(s)`,
+        description: `Chapters assigned to ${result.updated || selectedProprietors.size} proprietor(s)`,
       });
     } catch (error) {
       console.error('Failed to assign chapters:', error);
