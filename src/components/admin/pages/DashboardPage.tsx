@@ -1,22 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, Users, CreditCard, FileText, DollarSign, Activity } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, CreditCard, FileText, DollarSign, Activity, MapPin } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 interface DashboardPageProps {
-  onNavigate: (page: 'dashboard' | 'proprietors' | 'schools' | 'payments' | 'import' | 'settings') => void;
+  onNavigate: (page: 'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'chapters' | 'import' | 'settings') => void;
 }
 
-interface DashboardStats {
-  totalProprietors: number;
-  activeSchools: number;
-  totalPayments: number;
-  pendingApprovals: number;
-  proprietorsChange?: string;
-  schoolsChange?: string;
-  paymentsChange?: string;
-  approvalsChange?: string;
+interface ProprietorStats {
+  total: number;
+  byStatus: Record<string, number>;
+  byNappsRegistration: Record<string, number>;
+  byClearingStatus: Record<string, number>;
+  byChapter: Record<string, number>;
+  totalAmountDue: number;
 }
 
 interface ActivityItem {
@@ -28,75 +27,80 @@ interface ActivityItem {
 }
 
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<ProprietorStats | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
+  const authToken = localStorage.getItem('admin_token');
+
   useEffect(() => {
     const fetchDashboardData = async () => {
+      if (!authToken) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        // TODO: Replace with actual API endpoint
-        // const response = await fetch('/api/v1/admin/dashboard', {
-        //   headers: { 'Authorization': `Bearer ${authToken}` }
-        // });
-        // const data = await response.json();
-        // setStats(data.stats);
-        // setActivities(data.activities);
-        
-        // Temporary: Set empty data until API is ready
-        setStats({
-          totalProprietors: 0,
-          activeSchools: 0,
-          totalPayments: 0,
-          pendingApprovals: 0
+        const response = await fetch(`${API_BASE_URL}/proprietors/stats`, {
+          headers: { 
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
         });
-        setActivities([]);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch stats');
+        }
+
+        const data = await response.json();
+        setStats(data);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
+        setStats({
+          total: 0,
+          byStatus: {},
+          byNappsRegistration: {},
+          byClearingStatus: {},
+          byChapter: {},
+          totalAmountDue: 0
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [authToken]);
 
   const statsConfig = [
     {
       title: 'Total Proprietors',
-      value: stats?.totalProprietors || 0,
-      change: stats?.proprietorsChange,
-      trend: 'up',
+      value: stats?.total || 0,
       icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50'
     },
     {
-      title: 'Active Schools',
-      value: stats?.activeSchools || 0,
-      change: stats?.schoolsChange,
-      trend: 'up',
+      title: 'Approved',
+      value: stats?.byStatus['approved'] || 0,
       icon: FileText,
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     },
     {
-      title: 'Total Payments',
-      value: stats?.totalPayments ? `₦${(stats.totalPayments / 1000000).toFixed(1)}M` : '₦0',
-      change: stats?.paymentsChange,
-      trend: 'up',
-      icon: DollarSign,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
-    },
-    {
-      title: 'Pending Approvals',
-      value: stats?.pendingApprovals || 0,
-      change: stats?.approvalsChange,
-      trend: 'down',
+      title: 'Pending',
+      value: stats?.byStatus['pending'] || 0,
       icon: CreditCard,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50'
+    },
+    {
+      title: 'Total Amount Due',
+      value: stats?.totalAmountDue ? `₦${(stats.totalAmountDue / 1000000).toFixed(1)}M` : '₦0',
+      icon: DollarSign,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50'
     },
   ];
 
@@ -147,35 +151,59 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
 
       {/* Recent Activity and Quick Actions */}
       <div className="grid md:grid-cols-3 gap-6">
-        {/* Recent Activity */}
+        {/* Chapter Analytics */}
         <Card className="md:col-span-2">
-          <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-            <div className="space-y-4">
-              {loading ? (
-                Array.from({ length: 5 }).map((_, index) => (
-                  <Skeleton key={index} className="h-16 w-full" />
-                ))
-              ) : activities.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Activity className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                  <p>No recent activities</p>
-                  <p className="text-sm">Activity will appear here as users interact with the system</p>
-                </div>
-              ) : (
-                activities.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Activity className="w-5 h-5 text-primary" />
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              Registrations by Chapter
+            </CardTitle>
+            <CardDescription>Distribution of proprietors across NAPPS chapters</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Skeleton key={index} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {Object.entries(stats?.byChapter || {})
+                  .sort(([, a], [, b]) => (b as number) - (a as number))
+                  .map(([chapter, count]) => (
+                    <div key={chapter} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          chapter === 'N/A' ? 'bg-red-100' : 'bg-blue-100'
+                        }`}>
+                          <MapPin className={`w-5 h-5 ${
+                            chapter === 'N/A' ? 'text-red-600' : 'text-blue-600'
+                          }`} />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {chapter === 'N/A' ? 'Unassigned' : chapter}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {((count as number / (stats?.total || 1)) * 100).toFixed(1)}% of total
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant={chapter === 'N/A' ? 'destructive' : 'secondary'} className="text-lg px-4 py-1">
+                        {count}
+                      </Badge>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900">{activity.description}</p>
-                      <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                    </div>
+                  ))}
+                {(!stats?.byChapter || Object.keys(stats.byChapter).length === 0) && (
+                  <div className="text-center py-8 text-gray-500">
+                    <MapPin className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                    <p>No chapter data available</p>
+                    <p className="text-sm">Chapter assignments will appear here</p>
                   </div>
-                ))
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -191,6 +219,14 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               >
                 <Users className="w-4 h-4 mr-2" />
                 View Proprietors
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => onNavigate('chapters')}
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                Manage Chapters
               </Button>
               <Button 
                 variant="outline" 
@@ -211,10 +247,10 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
-                onClick={() => onNavigate('settings')}
+                onClick={() => onNavigate('fees')}
               >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                System Settings
+                <DollarSign className="w-4 h-4 mr-2" />
+                Fee Configuration
               </Button>
             </div>
           </CardContent>
@@ -225,7 +261,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Overview</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Registration Status</h3>
             <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
               <div className="text-center text-gray-500">
                 <BarChart3 className="w-12 h-12 mx-auto mb-2 text-gray-400" />

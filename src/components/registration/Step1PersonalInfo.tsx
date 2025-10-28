@@ -27,7 +27,7 @@ const step1Schema = z.object({
   sex: z.enum(['Male', 'Female'], { required_error: 'Please select your gender' }),
   email: z.string().email('Invalid email address'),
   phone: z.string().min(10, 'Phone number is required'),
-  chapters: z.array(z.enum(NAPPS_CHAPTERS)).optional(),
+  chapters: z.array(z.enum(NAPPS_CHAPTERS)).min(1, 'Please select a chapter'),
   passportPhoto: z.string().optional(),
   nappsRegistered: z.enum(['Not Registered', 'Registered', 'Registered with Certificate']).optional(),
   participationHistory: z.union([z.string(), z.array(z.string())]).optional(),
@@ -315,8 +315,8 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
       {/* Chapters Assignment */}
       <div className="space-y-4 pt-6 border-t">
         <div>
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900">NAPPS Chapter</h3>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Select the NAPPS chapter you belong to (required)</p>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">NAPPS Chapter *</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Select the NAPPS chapter you belong to</p>
         </div>
 
         <div className="space-y-3">
@@ -343,6 +343,9 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
               </Select>
             )}
           />
+          {errors.chapters && (
+            <p className="text-xs text-red-500 mt-1">{errors.chapters.message}</p>
+          )}
           <p className="text-xs text-muted-foreground">
             Select one chapter. This can be updated later by an administrator.
           </p>

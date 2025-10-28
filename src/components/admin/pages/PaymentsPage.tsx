@@ -50,6 +50,7 @@ interface Payment {
     middleName?: string;
     lastName: string;
     email: string;
+    chapters?: string[];
   };
   schoolId: {
     _id: string;
@@ -411,6 +412,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                 <TableRow>
                   <TableHead>Proprietor</TableHead>
                   <TableHead>School</TableHead>
+                  <TableHead>Chapter</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Method</TableHead>
                   <TableHead>Status</TableHead>
@@ -425,6 +427,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                     <TableRow key={index}>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-16" /></TableCell>
@@ -435,7 +438,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                   ))
                 ) : filteredPayments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                       <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                       <p className="font-medium">
                         {pagination.total === 0 ? 'No payment records found' : 'No payments match your filters'}
@@ -455,6 +458,17 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                         {payment.proprietorId?.firstName || 'N/A'} {payment.proprietorId?.lastName || ''}
                       </TableCell>
                       <TableCell>{payment.schoolId?.schoolName || 'N/A'}</TableCell>
+                      <TableCell>
+                        {payment.proprietorId?.chapters && payment.proprietorId.chapters.length > 0 ? (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            {payment.proprietorId.chapters[0]}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
+                            N/A
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell>₦{(payment.amount / 100).toLocaleString()}</TableCell>
                       <TableCell>{getMethodBadge(payment.reference)}</TableCell>
                       <TableCell>{getStatusBadge(payment.status)}</TableCell>
