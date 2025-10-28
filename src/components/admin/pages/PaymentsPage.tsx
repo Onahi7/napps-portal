@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -498,6 +499,34 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                               </>
                             )}
                             <DropdownMenuItem>Send Notification</DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={async () => {
+                                if (confirm('Are you sure you want to delete this payment? This action cannot be undone.')) {
+                                  try {
+                                    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/${payment._id}`, {
+                                      method: 'DELETE',
+                                      headers: { 
+                                        'Authorization': `Bearer ${authToken}`,
+                                        'Content-Type': 'application/json'
+                                      }
+                                    });
+                                    
+                                    if (response.ok) {
+                                      toast.success('Payment deleted successfully');
+                                      handleRefresh();
+                                    } else {
+                                      toast.error('Failed to delete payment');
+                                    }
+                                  } catch (error) {
+                                    console.error('Delete error:', error);
+                                    toast.error('Failed to delete payment');
+                                  }
+                                }
+                              }}
+                            >
+                              Delete Payment
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
