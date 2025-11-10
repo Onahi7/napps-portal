@@ -101,6 +101,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [stats, setStats] = useState<PaymentStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [methodFilter, setMethodFilter] = useState('all');
   const [chapterFilter, setChapterFilter] = useState('all');
@@ -235,14 +236,64 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
     setSearchTerm(value);
   };
 
-  // Export payments to CSV
-  const handleExportPayments = () => {
+  // Export payments to CSV - Fetch all payments for export
+  const handleExportPayments = async () => {
+    if (!authToken) {
+      toast.error('Authentication required');
+      return;
+    }
+
+    setExporting(true);
     try {
-      // Use filtered payments for export
-      const dataToExport = filteredPayments;
+      toast.info('Preparing export... This may take a moment.');
+
+      // Build query parameters to fetch ALL payments with filters
+      const queryParams = new URLSearchParams({
+        page: '1',
+        limit: '10000', // Fetch up to 10,000 records
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      });
+
+      // Add active filters
+      if (statusFilter !== 'all') {
+        queryParams.append('status', statusFilter);
+      }
+
+      // Fetch all payments
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments?${queryParams}`, {
+        headers: { 
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch payments for export');
+      }
+
+      const data: PaymentsResponse = await response.json();
+      let allPayments = data.data || [];
+
+      // Apply client-side filters (search and chapter)
+      const dataToExport = allPayments.filter((payment) => {
+        // Search filter
+        const matchesSearch = searchTerm === '' || 
+          payment.proprietorId?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          payment.proprietorId?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          payment.schoolId?.schoolName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          payment.reference?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // Chapter filter
+        const matchesChapter = chapterFilter === 'all' || 
+          (chapterFilter === 'unassigned' && (!payment.proprietorId?.chapters || payment.proprietorId.chapters.length === 0)) ||
+          (chapterFilter !== 'unassigned' && payment.proprietorId?.chapters?.includes(chapterFilter));
+        
+        return matchesSearch && matchesChapter;
+      });
 
       if (dataToExport.length === 0) {
-        toast.error('No payments to export');
+        toast.error('No payments to export with current filters');
         return;
       }
 
@@ -251,12 +302,15 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
         'Payment Date',
         'Proprietor Name',
         'Email',
+        'Phone',
         'School',
         'Chapter',
         'Amount (₦)',
         'Status',
+        'Payment Type',
         'Reference',
-        'Payment Method'
+        'Payment Method',
+        'Transaction ID'
       ];
 
       // Prepare CSV rows
@@ -266,20 +320,23 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
           : new Date(payment.createdAt).toLocaleDateString(),
         `${payment.proprietorId?.firstName || ''} ${payment.proprietorId?.lastName || ''}`.trim() || 'N/A',
         payment.proprietorId?.email || 'N/A',
+        payment.email || 'N/A',
         payment.schoolId?.schoolName || 'N/A',
         payment.proprietorId?.chapters && payment.proprietorId.chapters.length > 0 
-          ? payment.proprietorId.chapters[0] 
+          ? payment.proprietorId.chapters.join('; ') 
           : 'Unassigned',
         (payment.amount / 100).toFixed(2),
         payment.status,
+        payment.paymentType || 'N/A',
         payment.reference,
-        payment.reference.startsWith('SIM_') ? 'Simulated' : 'Online'
+        payment.reference.startsWith('SIM_') ? 'Simulated' : 'Online',
+        payment.paystackTransactionId || 'N/A'
       ]);
 
       // Combine headers and rows
       const csvContent = [
         headers.join(','),
-        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
       ].join('\n');
 
       // Create and download file
@@ -293,11 +350,14 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${dataToExport.length} payment records`);
+      toast.success(`Successfully exported ${dataToExport.length} payment records`);
     } catch (error) {
       console.error('Export error:', error);
-      toast.error('Failed to export payments');
+      toast.error('Failed to export payments. Please try again.');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -395,9 +455,21 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button onClick={handleExportPayments} disabled={loading || filteredPayments.length === 0}>
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
+          <Button 
+            onClick={handleExportPayments} 
+            disabled={loading || exporting}
+          >
+            {exporting ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Export Report
+              </>
+            )}
           </Button>
         </div>
       </div>
