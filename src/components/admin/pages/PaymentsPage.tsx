@@ -42,6 +42,7 @@ import {
   ChevronsRight,
   RefreshCw
 } from 'lucide-react';
+import { NAPPS_CHAPTERS } from '@/constants/napps-chapters';
 
 interface Payment {
   _id: string;
@@ -102,6 +103,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [methodFilter, setMethodFilter] = useState('all');
+  const [chapterFilter, setChapterFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -233,12 +235,87 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
     setSearchTerm(value);
   };
 
+  // Export payments to CSV
+  const handleExportPayments = () => {
+    try {
+      // Use filtered payments for export
+      const dataToExport = filteredPayments;
+
+      if (dataToExport.length === 0) {
+        toast.error('No payments to export');
+        return;
+      }
+
+      // Prepare CSV headers
+      const headers = [
+        'Payment Date',
+        'Proprietor Name',
+        'Email',
+        'School',
+        'Chapter',
+        'Amount (₦)',
+        'Status',
+        'Reference',
+        'Payment Method'
+      ];
+
+      // Prepare CSV rows
+      const rows = dataToExport.map(payment => [
+        payment.paidAt 
+          ? new Date(payment.paidAt).toLocaleDateString()
+          : new Date(payment.createdAt).toLocaleDateString(),
+        `${payment.proprietorId?.firstName || ''} ${payment.proprietorId?.lastName || ''}`.trim() || 'N/A',
+        payment.proprietorId?.email || 'N/A',
+        payment.schoolId?.schoolName || 'N/A',
+        payment.proprietorId?.chapters && payment.proprietorId.chapters.length > 0 
+          ? payment.proprietorId.chapters[0] 
+          : 'Unassigned',
+        (payment.amount / 100).toFixed(2),
+        payment.status,
+        payment.reference,
+        payment.reference.startsWith('SIM_') ? 'Simulated' : 'Online'
+      ]);
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `payments_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`Exported ${dataToExport.length} payment records`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export payments');
+    }
+  };
+
   // Client-side search filtering for immediate feedback
-  const filteredPayments = searchTerm === '' ? payments : payments.filter((payment) => {
-    return payment.proprietorId?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredPayments = payments.filter((payment) => {
+    // Search filter
+    const matchesSearch = searchTerm === '' || 
+      payment.proprietorId?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.proprietorId?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.schoolId?.schoolName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.reference?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Chapter filter
+    const matchesChapter = chapterFilter === 'all' || 
+      (chapterFilter === 'unassigned' && (!payment.proprietorId?.chapters || payment.proprietorId.chapters.length === 0)) ||
+      (chapterFilter !== 'unassigned' && payment.proprietorId?.chapters?.includes(chapterFilter));
+    
+    return matchesSearch && matchesChapter;
   });
 
   const statsConfig = [
@@ -318,7 +395,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button>
+          <Button onClick={handleExportPayments} disabled={loading || filteredPayments.length === 0}>
             <Download className="w-4 h-4 mr-2" />
             Export Report
           </Button>
@@ -390,6 +467,20 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={chapterFilter} onValueChange={setChapterFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by chapter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Chapters</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {NAPPS_CHAPTERS.map((chapter) => (
+                  <SelectItem key={chapter} value={chapter}>
+                    {chapter}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={methodFilter} onValueChange={setMethodFilter}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Method" />
@@ -400,10 +491,6 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                 <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline">
-              <Filter className="w-4 h-4 mr-2" />
-              More Filters
-            </Button>
           </div>
 
           {/* Payments Table */}
