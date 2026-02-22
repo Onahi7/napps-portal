@@ -14,6 +14,9 @@ import { ProprietorDashboard } from "./pages/ProprietorDashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { SimulatedPayment } from "./pages/SimulatedPayment";
 import { PaymentSuccess } from "./pages/PaymentSuccess";
+import LevyPayment from "./pages/LevyPayment";
+import LevyPaymentVerify from "./pages/LevyPaymentVerify";
+import LevyPaymentDownload from "./pages/LevyPaymentDownload";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +44,9 @@ const App = () => (
               </ProtectedRoute>
             } 
           />
+          <Route path="/levy-payment" element={<LevyPayment />} />
+          <Route path="/levy-payment/verify" element={<LevyPaymentVerify />} />
+          <Route path="/levy-payment/download" element={<LevyPaymentDownload />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

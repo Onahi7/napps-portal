@@ -20,7 +20,8 @@ import {
   Users,
   Award,
   FileText,
-  Camera
+  Camera,
+  DollarSign
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -109,6 +110,10 @@ export const ProprietorDashboard = () => {
   const handlePayment = () => {
     toast.info('Redirecting to payment gateway...');
     // Implement Paystack payment here
+  };
+
+  const handleLevyPayment = () => {
+    navigate('/levy-payment');
   };
 
   if (loading) {
@@ -489,6 +494,22 @@ export const ProprietorDashboard = () => {
               <Button variant="ghost" size="icon" onClick={() => setIsEditDialogOpen(true)}>
                 <Edit className="w-5 h-5" />
               </Button>
+            {/* Levy Payment CTA Card */}
+            <Card className="md:col-span-2 bg-gradient-to-r from-primary to-primary/80 text-white cursor-pointer hover:shadow-lg transition-shadow" onClick={handleLevyPayment}>
+              <CardContent className="pt-4 md:pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm md:text-base font-semibold mb-2">Pay Secretariat Building Levy</p>
+                    <p className="text-2xl md:text-3xl font-bold mb-1">₦5,100</p>
+                    <p className="text-xs opacity-90">Click to pay NAPPS Nasarawa State Secretariat Building Levy</p>
+                  </div>
+                  <div className="flex w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-full items-center justify-center">
+                    <DollarSign className="w-6 h-6 md:w-8 md:h-8" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
               <Button variant="ghost" size="icon" onClick={handleLogout}>
                 <LogOut className="w-5 h-5" />
               </Button>
