@@ -39,6 +39,9 @@ const LevyPaymentVerify = () => {
       return;
     }
 
+    setIsLoading(true);
+    setStatus('verifying');
+
     try {
       const response = await fetch(`${API_BASE_URL}/levy-payments/verify/${reference}`);
 
@@ -59,8 +62,10 @@ const LevyPaymentVerify = () => {
           toast.warning('Payment is still being processed');
         }
       } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Verification failed:', errorData);
         setStatus('failed');
-        toast.error('Failed to verify payment');
+        toast.error(errorData.message || 'Failed to verify payment');
       }
     } catch (error) {
       console.error('Verification error:', error);
@@ -240,10 +245,36 @@ const LevyPaymentVerify = () => {
                 </Button>
               )}
 
+              {(status === 'failed' || status === 'pending') && (
+                <Button 
+                  size="lg" 
+                  className="w-full" 
+                  onClick={verifyPayment}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Retry Verification
+                    </>
+                  )}
+                </Button>
+              )}
+
               {status === 'failed' && (
-                <Button size="lg" className="w-full" onClick={() => navigate('/levy-payment')}>
+                <Button 
+                  variant="outline"
+                  size="lg" 
+                  className="w-full" 
+                  onClick={() => navigate('/levy-payment')}
+                >
                   <FileText className="w-4 h-4 mr-2" />
-                  Try Again
+                  Make New Payment
                 </Button>
               )}
 
