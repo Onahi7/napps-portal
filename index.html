@@ -2,6 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    
+    <!-- Preconnect to Flutterwave for faster loading -->
+    <link rel="preconnect" href="https://checkout.flutterwave.com">
+    <link rel="preconnect" href="https://api.ravepay.co">
+    <link rel="dns-prefetch" href="https://api.flutterwave.com">
+    
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -9,6 +15,21 @@
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64x64.png" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Content Security Policy for Flutterwave Integration -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.flutterwave.com https://api.ravepay.co;
+      style-src 'self' 'unsafe-inline' https://checkout.flutterwave.com;
+      img-src 'self' data: https: blob:;
+      font-src 'self' data: https://checkout.flutterwave.com;
+      connect-src 'self' https://checkout.flutterwave.com https://api.ravepay.co https://api.flutterwave.com https://api.nappsnasarawa.com http://localhost:3001;
+      frame-src 'self' https://checkout.flutterwave.com https://api.ravepay.co;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self' https://checkout.flutterwave.com;
+    ">
+    
     <title>NAPPS Nasarawa Portal - Proprietors Registration & Payment</title>
     <meta name="description" content="Official portal for NAPPS Nasarawa State private school proprietors. Find records, pay dues, and manage registrations with the Ministry of Education." />
     <meta name="author" content="NAPPS Nasarawa State" />
