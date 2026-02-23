@@ -23,21 +23,22 @@ export const generateLevyReceipt = async (paymentData: LevyPaymentData): Promise
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4',
+    compress: true,
   });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
+  const margin = 15; // Reduced margin for more space
   const contentWidth = pageWidth - 2 * margin;
 
-  // Colors
-  const primaryColor: [number, number, number] = [41, 128, 185]; // Blue
+  // Colors - Changed to green to match NAPPS branding
+  const primaryColor: [number, number, number] = [30, 126, 52]; // Green
   const secondaryColor: [number, number, number] = [52, 73, 94]; // Dark gray
   const lightGray: [number, number, number] = [236, 240, 241];
 
   let currentY = margin;
 
-  // Header background
+  // Header background - Green gradient
   doc.setFillColor(...primaryColor);
   doc.rect(0, 0, pageWidth, 50, 'F');
 
@@ -60,60 +61,60 @@ export const generateLevyReceipt = async (paymentData: LevyPaymentData): Promise
   doc.text('National Association of Proprietors of Private Schools', margin, 40);
   doc.text('Nasarawa State Chapter', margin, 46);
 
-  currentY = 60;
+  currentY = 55; // Reduced from 60 for more space
 
-  // Receipt info box
+  // Receipt info box - More compact
   doc.setFillColor(...lightGray);
-  doc.roundedRect(margin, currentY, contentWidth, 25, 3, 3, 'F');
+  doc.roundedRect(margin, currentY, contentWidth, 20, 3, 3, 'F'); // Reduced from 25
 
-  doc.setFontSize(10);
+  doc.setFontSize(9); // Reduced from 10
   doc.setTextColor(...secondaryColor);
   doc.setFont('helvetica', 'bold');
-  doc.text('Receipt No:', margin + 5, currentY + 8);
+  doc.text('Receipt No:', margin + 5, currentY + 7);
   doc.setFont('helvetica', 'normal');
-  doc.text(paymentData.receiptNumber, margin + 35, currentY + 8);
+  doc.text(paymentData.receiptNumber, margin + 32, currentY + 7); // Adjusted position
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Date:', margin + 5, currentY + 16);
+  doc.text('Date:', margin + 5, currentY + 14);
   doc.setFont('helvetica', 'normal');
   const paymentDate = new Date(paymentData.paidAt).toLocaleDateString('en-NG', {
     year: 'numeric',
-    month: 'long',
+    month: 'short', // Changed from 'long' to save space
     day: 'numeric',
   });
-  doc.text(paymentDate, margin + 35, currentY + 16);
+  doc.text(paymentDate, margin + 32, currentY + 14);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Reference:', pageWidth / 2 + 5, currentY + 8);
+  doc.text('Reference:', pageWidth / 2 + 5, currentY + 7);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.text(paymentData.reference, pageWidth / 2 + 30, currentY + 8);
+  doc.setFontSize(7); // Smaller for long reference
+  doc.text(paymentData.reference, pageWidth / 2 + 28, currentY + 7);
 
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text('Status:', pageWidth / 2 + 5, currentY + 16);
+  doc.text('Status:', pageWidth / 2 + 5, currentY + 14);
   doc.setTextColor(39, 174, 96); // Green
-  doc.text('PAID', pageWidth / 2 + 30, currentY + 16);
+  doc.text('PAID', pageWidth / 2 + 28, currentY + 14);
 
-  currentY += 35;
+  currentY += 26; // Reduced from 35
 
   // Payer Information Section
   doc.setTextColor(...primaryColor);
-  doc.setFontSize(14);
+  doc.setFontSize(12); // Reduced from 14
   doc.setFont('helvetica', 'bold');
   doc.text('PAYER INFORMATION', margin, currentY);
 
-  currentY += 8;
+  currentY += 6; // Reduced from 8
 
   // Draw a line
   doc.setDrawColor(...primaryColor);
   doc.setLineWidth(0.5);
   doc.line(margin, currentY, pageWidth - margin, currentY);
 
-  currentY += 8;
+  currentY += 6; // Reduced from 8
 
   // Payer details
-  doc.setFontSize(10);
+  doc.setFontSize(9); // Reduced from 10
   doc.setTextColor(...secondaryColor);
 
   const payerDetails = [
@@ -127,58 +128,58 @@ export const generateLevyReceipt = async (paymentData: LevyPaymentData): Promise
     doc.setFont('helvetica', 'bold');
     doc.text(label, margin, currentY);
     doc.setFont('helvetica', 'normal');
-    doc.text(value, margin + 35, currentY);
-    currentY += 7;
+    doc.text(value, margin + 32, currentY); // Adjusted position
+    currentY += 6; // Reduced from 7
   });
 
-  currentY += 5;
+  currentY += 3; // Reduced from 5
 
   // School Information Section
   doc.setTextColor(...primaryColor);
-  doc.setFontSize(14);
+  doc.setFontSize(12); // Reduced from 14
   doc.setFont('helvetica', 'bold');
   doc.text('SCHOOL INFORMATION', margin, currentY);
 
-  currentY += 8;
+  currentY += 6; // Reduced from 8
 
   // Draw a line
   doc.setDrawColor(...primaryColor);
   doc.line(margin, currentY, pageWidth - margin, currentY);
 
-  currentY += 8;
+  currentY += 6; // Reduced from 8
 
   // School details
-  doc.setFontSize(10);
+  doc.setFontSize(9); // Reduced from 10
   doc.setTextColor(...secondaryColor);
   doc.setFont('helvetica', 'bold');
   doc.text('School Name:', margin, currentY);
   doc.setFont('helvetica', 'normal');
-  doc.text(paymentData.schoolName, margin + 35, currentY);
+  doc.text(paymentData.schoolName, margin + 32, currentY);
 
-  currentY += 10;
+  currentY += 8; // Reduced from 10
 
   doc.setFont('helvetica', 'bold');
   doc.text('Wards:', margin, currentY);
   doc.setFont('helvetica', 'normal');
   const wardsText = paymentData.wards.join(', ');
-  const splitWards = doc.splitTextToSize(wardsText, contentWidth - 40);
-  doc.text(splitWards, margin + 35, currentY);
+  const splitWards = doc.splitTextToSize(wardsText, contentWidth - 35);
+  doc.text(splitWards, margin + 32, currentY);
 
-  currentY += splitWards.length * 5 + 10;
+  currentY += splitWards.length * 4 + 8; // Reduced spacing
 
   // Payment Details Section
   doc.setTextColor(...primaryColor);
-  doc.setFontSize(14);
+  doc.setFontSize(12); // Reduced from 14
   doc.setFont('helvetica', 'bold');
   doc.text('PAYMENT DETAILS', margin, currentY);
 
-  currentY += 8;
+  currentY += 6; // Reduced from 8
 
   // Draw a line
   doc.setDrawColor(...primaryColor);
   doc.line(margin, currentY, pageWidth - margin, currentY);
 
-  currentY += 8;
+  currentY += 6; // Reduced from 8
 
   // Payment table
   doc.setFillColor(...lightGray);
