@@ -26,6 +26,7 @@ interface School {
   id: string;
   name: string;
   lga?: string;
+  chapter?: string;
 }
 
 interface Ward {
@@ -64,7 +65,7 @@ const NAPPS_CHAPTERS = [
   'Nas Poly'
 ];
 
-const LEVY_AMOUNT = 5250;
+const LEVY_AMOUNT = 5500;
 
 const LevyPayment = () => {
   const navigate = useNavigate();
@@ -72,6 +73,7 @@ const LevyPayment = () => {
   
   const [loading, setLoading] = useState(false);
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+  const [loadingSchools, setLoadingSchools] = useState(true);
   const [schools, setSchools] = useState<School[]>([]);
   const [formData, setFormData] = useState<LevyPaymentFormData>({
     memberName: '',
@@ -110,15 +112,46 @@ const LevyPayment = () => {
     }
   }, [formData]);
 
-  const fetchSchools = async () => {
+  const fetchSchools = async (selectedChapter?: string) => {
+    setLoadingSchools(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/levy-payments/schools`);
-      if (response.ok) {
-        const data = await response.json();
-        setSchools(data);
+      // Use PostgreSQL endpoint for accurate school-chapter mappings
+      const url = selectedChapter 
+        ? `${API_BASE_URL}/levy-payments/schools/postgres?chapter=${encodeURIComponent(selectedChapter)}`
+        : `${API_BASE_URL}/levy-payments/schools/postgres`;
+      
+      console.log('Fetching schools from PostgreSQL:', url);
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    } catch (error) {
+      
+      const data = await response.json();
+      console.log('Schools fetched from PostgreSQL:', data.length, selectedChapter ? `for chapter: ${selectedChapter}` : '(all)');
+      
+      if (data && Array.isArray(data)) {
+        setSchools(data);
+        if (data.length === 0) {
+          toast.info('No schools found for this chapter. Please enter school name manually.');
+          setShowManualSchoolInput(true);
+          handleInputChange('isManualSchoolEntry', true);
+        } else {
+          setShowManualSchoolInput(false);
+          handleInputChange('isManualSchoolEntry', false);
+        }
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (error: any) {
       console.error('Error fetching schools:', error);
+      toast.error('Failed to load schools', {
+        description: 'Please enter your school name manually or try refreshing the page.',
+      });
+      setShowManualSchoolInput(true);
+      handleInputChange('isManualSchoolEntry', true);
+    } finally {
+      setLoadingSchools(false);
     }
   };
 
@@ -429,7 +462,10 @@ const LevyPayment = () => {
 
                   <div>
                     <Label htmlFor="chapter">Chapter *</Label>
-                    <Select value={formData.chapter} onValueChange={(value) => handleInputChange('chapter', value)}>
+                    <Select 
+                      value={formData.chapter} 
+                      onValueChange={(value) => handleInputChange('chapter', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select your chapter" />
                       </SelectTrigger>
@@ -441,6 +477,11 @@ const LevyPayment = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                    {formData.chapter && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Schools will be filtered for {formData.chapter}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -451,6 +492,12 @@ const LevyPayment = () => {
                   <SchoolIcon className="w-5 h-5" />
                   School Information
                 </h3>
+
+                {!formData.chapter && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
+                    ℹ️ Please select a chapter first to see available schools
+                  </div>
+                )}
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -473,17 +520,42 @@ const LevyPayment = () => {
                       onChange={(e) => handleInputChange('schoolName', e.target.value)}
                       required
                     />
+                  ) : loadingSchools ? (
+                    <div className="flex items-center gap-2 p-2 border rounded-md">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm text-muted-foreground">
+                        {formData.chapter ? `Loading schools for ${formData.chapter}...` : 'Loading schools...'}
+                      </span>
+                    </div>
                   ) : (
-                    <Select value={formData.schoolName} onValueChange={(value) => handleInputChange('schoolName', value)}>
+                    <Select 
+                      value={formData.schoolName} 
+                      onValueChange={(value) => handleInputChange('schoolName', value)}
+                      disabled={!formData.chapter}
+                    >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select your school" />
+                        <SelectValue 
+                          placeholder={
+                            !formData.chapter 
+                              ? "Select a chapter first" 
+                              : schools.length > 0 
+                                ? `Select your school (${schools.length} available)` 
+                                : "No schools available - use manual entry"
+                          } 
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        {schools.map((school) => (
-                          <SelectItem key={school.id} value={school.name}>
-                            {school.name} {school.lga && `(${school.lga})`}
-                          </SelectItem>
-                        ))}
+                        {schools.length > 0 ? (
+                          schools.map((school) => (
+                            <SelectItem key={school.id} value={school.name}>
+                              {school.name} {school.lga && `(${school.lga})`}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-2 text-sm text-muted-foreground text-center">
+                            No schools available for {formData.chapter}
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                   )}
