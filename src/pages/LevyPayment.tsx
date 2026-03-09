@@ -65,7 +65,9 @@ const NAPPS_CHAPTERS = [
   'Nas Poly'
 ];
 
-const LEVY_AMOUNT = 5500;
+const LEVY_AMOUNT = 5600;
+const LEVY_BASE = 5500;
+const PAYMENT_CHARGE = 100;
 
 const LevyPayment = () => {
   const navigate = useNavigate();
@@ -598,10 +600,19 @@ const LevyPayment = () => {
               {/* Payment Summary */}
               <div className="bg-primary/5 p-6 rounded-lg space-y-3">
                 <h3 className="font-semibold text-lg">Payment Summary</h3>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Levy Amount:</span>
+                  <span>₦{LEVY_BASE.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Payment Processing Charge:</span>
+                  <span>₦{PAYMENT_CHARGE.toLocaleString()}</span>
+                </div>
+                <div className="border-t pt-2 flex justify-between items-center">
+                  <span className="font-semibold">Total:</span>
                   <span className="text-2xl font-bold">₦{LEVY_AMOUNT.toLocaleString()}</span>
                 </div>
+                <p className="text-xs text-muted-foreground">Includes ₦{PAYMENT_CHARGE} payment processing charge</p>
               </div>
 
               {/* Submit Button */}
