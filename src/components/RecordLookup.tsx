@@ -130,7 +130,7 @@ const mockRecord: ProprietorRecord = {
 };
 
 export const RecordLookup = () => {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
   
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
