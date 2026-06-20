@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Layout } from '@/components/Layout';
+import { PortalPageShell } from '@/components/portal/PortalPageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Loader2, 
-  FileText, 
+import {
+  CheckCircle,
   Download,
-  Home
+  FileText,
+  Home,
+  Loader2,
+  RefreshCcw,
+  XCircle,
 } from 'lucide-react';
 import { generateLevyReceipt } from '@/utils/receiptGenerator';
 
@@ -44,16 +47,14 @@ const LevyPaymentVerify = () => {
 
     try {
       const response = await fetch(`${API_BASE_URL}/levy-payments/verify/${reference}`);
-
       if (response.ok) {
         const data = await response.json();
         setPaymentDetails(data);
 
         if (data.status === 'success') {
           setStatus('success');
-          // Clear saved form data
           localStorage.removeItem('levyPaymentFormData');
-          toast.success('Payment verified successfully!');
+          toast.success('Payment verified successfully');
         } else if (data.status === 'failed') {
           setStatus('failed');
           toast.error('Payment failed');
@@ -91,207 +92,188 @@ const LevyPaymentVerify = () => {
     }
   };
 
-  const getStatusIcon = () => {
+  const getStatusCopy = () => {
     switch (status) {
       case 'success':
-        return <CheckCircle className="w-24 h-24 text-green-600" />;
+        return {
+          title: 'Levy payment confirmed',
+          description: 'Your NAPPS Nasarawa secretariat building levy has been verified successfully.',
+          badge: 'Verified',
+          icon: <CheckCircle className="h-20 w-20 text-green-600" />,
+        };
       case 'failed':
-        return <XCircle className="w-24 h-24 text-red-600" />;
+        return {
+          title: 'Verification failed',
+          description: 'We could not confirm this levy payment. You can retry verification or start a new payment.',
+          badge: 'Needs attention',
+          icon: <XCircle className="h-20 w-20 text-red-600" />,
+        };
       case 'pending':
-        return <Loader2 className="w-24 h-24 text-yellow-600 animate-spin" />;
+        return {
+          title: 'Verification pending',
+          description: 'The payment is still being processed. Try again shortly if it does not update.',
+          badge: 'Processing',
+          icon: <Loader2 className="h-20 w-20 animate-spin text-amber-600" />,
+        };
       default:
-        return <Loader2 className="w-24 h-24 text-primary animate-spin" />;
+        return {
+          title: 'Verifying payment',
+          description: 'Please wait while we confirm your levy payment.',
+          badge: 'Checking',
+          icon: <Loader2 className="h-20 w-20 animate-spin text-primary" />,
+        };
     }
   };
 
-  const getStatusTitle = () => {
-    switch (status) {
-      case 'success':
-        return 'Payment Successful!';
-      case 'failed':
-        return 'Payment Failed';
-      case 'pending':
-        return 'Payment Pending';
-      default:
-        return 'Verifying Payment...';
-    }
-  };
-
-  const getStatusMessage = () => {
-    switch (status) {
-      case 'success':
-        return 'Your NAPPS Nasarawa State Secretariat Building Levy payment has been processed successfully.';
-      case 'failed':
-        return 'Your payment could not be completed. Please try again.';
-      case 'pending':
-        return 'Your payment is being processed. Please wait...';
-      default:
-        return 'Please wait while we verify your payment...';
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5">
-        <div className="text-center">
-          <Loader2 className="w-16 h-16 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Verifying your payment...</p>
-        </div>
-      </div>
-    );
-  }
+  const statusCopy = getStatusCopy();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 py-8">
-      <div className="container mx-auto px-4 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-4">{getStatusIcon()}</div>
-              <CardTitle className="text-3xl mb-2">{getStatusTitle()}</CardTitle>
-              <p className="text-muted-foreground">{getStatusMessage()}</p>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {paymentDetails && (
-              <div className="bg-secondary/10 p-6 rounded-lg space-y-4">
-                <h3 className="font-semibold text-lg mb-4">Payment Details</h3>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Reference</p>
-                    <p className="font-mono text-sm font-medium">{paymentDetails.reference}</p>
-                  </div>
-
-                  {paymentDetails.receiptNumber && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Receipt Number</p>
-                      <p className="font-mono text-sm font-medium">{paymentDetails.receiptNumber}</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="text-sm text-muted-foreground">Amount</p>
-                    <p className="text-lg font-bold">₦{(paymentDetails.amount / 100).toLocaleString()}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <Badge variant={status === 'success' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'}>
-                      {paymentDetails.status}
-                    </Badge>
-                  </div>
-
-                  <div className="col-span-2">
-                    <p className="text-sm text-muted-foreground">Member Name</p>
-                    <p className="font-medium">{paymentDetails.memberName}</p>
-                  </div>
-
-                  <div className="col-span-2">
-                    <p className="text-sm text-muted-foreground">Chapter</p>
-                    <p className="font-medium">{paymentDetails.chapter}</p>
-                  </div>
-
-                  <div className="col-span-2">
-                    <p className="text-sm text-muted-foreground">School</p>
-                    <p className="font-medium">{paymentDetails.schoolName}</p>
-                  </div>
-
-                  {paymentDetails.wards && paymentDetails.wards.length > 0 && (
-                    <div className="col-span-2">
-                      <p className="text-sm text-muted-foreground">Wards</p>
-                      <p className="font-medium">{paymentDetails.wards.join(', ')}</p>
-                    </div>
-                  )}
-
-                  {paymentDetails.paidAt && (
-                    <div className="col-span-2">
-                      <p className="text-sm text-muted-foreground">Payment Date</p>
-                      <p className="font-medium">
-                        {new Date(paymentDetails.paidAt).toLocaleString('en-NG', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
-                    </div>
-                  )}
+    <Layout>
+      <div className="min-h-screen bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--secondary)/0.45))] py-8">
+        <div className="container mx-auto max-w-4xl px-4">
+          <PortalPageShell
+            eyebrow="Levy Verification"
+            title={statusCopy.title}
+            description={statusCopy.description}
+            badge={statusCopy.badge}
+            icon={FileText}
+            stats={[
+              { label: 'Reference', value: reference || 'Unavailable', helper: 'Returned by the payment gateway.' },
+              { label: 'Status', value: status.toUpperCase(), helper: 'Current verification state.' },
+            ]}
+          >
+            <Card className="portal-panel">
+              <CardHeader>
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-4">{statusCopy.icon}</div>
+                  <CardTitle className="text-3xl">{statusCopy.title}</CardTitle>
+                  <p className="mt-2 max-w-xl text-sm text-muted-foreground">{statusCopy.description}</p>
                 </div>
-              </div>
-            )}
+              </CardHeader>
 
-            <div className="flex flex-col gap-3">
-              {status === 'success' && paymentDetails && (
-                <Button
-                  size="lg"
-                  className="w-full"
-                  onClick={handleDownloadReceipt}
-                  disabled={downloading}
-                >
-                  {downloading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating Receipt...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4 mr-2" />
-                      Download Receipt
-                    </>
-                  )}
-                </Button>
-              )}
+              <CardContent className="space-y-6">
+                {isLoading ? (
+                  <div className="portal-panel-muted flex flex-col items-center justify-center gap-3 border border-primary/10 py-10">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">Verifying your payment...</p>
+                  </div>
+                ) : (
+                  <>
+                    {paymentDetails && (
+                      <div className="portal-panel-muted space-y-4 border border-primary/10 p-6">
+                        <h3 className="text-lg font-semibold">Payment details</h3>
 
-              {(status === 'failed' || status === 'pending') && (
-                <Button 
-                  size="lg" 
-                  className="w-full" 
-                  onClick={verifyPayment}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4 mr-2" />
-                      Retry Verification
-                    </>
-                  )}
-                </Button>
-              )}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Reference</p>
+                            <p className="font-mono text-sm font-medium">{paymentDetails.reference}</p>
+                          </div>
 
-              {status === 'failed' && (
-                <Button 
-                  variant="outline"
-                  size="lg" 
-                  className="w-full" 
-                  onClick={() => navigate('/levy-payment')}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Make New Payment
-                </Button>
-              )}
+                          {paymentDetails.receiptNumber && (
+                            <div>
+                              <p className="text-sm text-muted-foreground">Receipt Number</p>
+                              <p className="font-mono text-sm font-medium">{paymentDetails.receiptNumber}</p>
+                            </div>
+                          )}
 
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full"
-                onClick={() => navigate('/dashboard')}
-              >
-                <Home className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Amount</p>
+                            <p className="text-lg font-bold">
+                              NGN {Math.round((paymentDetails.amount || 0) / 100).toLocaleString()}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-muted-foreground">Status</p>
+                            <Badge variant={status === 'success' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'}>
+                              {paymentDetails.status}
+                            </Badge>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <p className="text-sm text-muted-foreground">Member Name</p>
+                            <p className="font-medium">{paymentDetails.memberName}</p>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <p className="text-sm text-muted-foreground">Chapter</p>
+                            <p className="font-medium">{paymentDetails.chapter}</p>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <p className="text-sm text-muted-foreground">School</p>
+                            <p className="font-medium">{paymentDetails.schoolName}</p>
+                          </div>
+
+                          {paymentDetails.wards?.length > 0 && (
+                            <div className="sm:col-span-2">
+                              <p className="text-sm text-muted-foreground">Wards</p>
+                              <p className="font-medium">{paymentDetails.wards.join(', ')}</p>
+                            </div>
+                          )}
+
+                          {paymentDetails.paidAt && (
+                            <div className="sm:col-span-2">
+                              <p className="text-sm text-muted-foreground">Payment Date</p>
+                              <p className="font-medium">
+                                {new Date(paymentDetails.paidAt).toLocaleString('en-NG', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-3">
+                      {status === 'success' && paymentDetails && (
+                        <Button size="lg" className="w-full" onClick={handleDownloadReceipt} disabled={downloading}>
+                          {downloading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Generating receipt...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="mr-2 h-4 w-4" />
+                              Download receipt
+                            </>
+                          )}
+                        </Button>
+                      )}
+
+                      {(status === 'failed' || status === 'pending') && (
+                        <Button size="lg" className="w-full" onClick={verifyPayment} disabled={isLoading}>
+                          <RefreshCcw className="mr-2 h-4 w-4" />
+                          Retry verification
+                        </Button>
+                      )}
+
+                      {status === 'failed' && (
+                        <Button variant="outline" size="lg" className="w-full" onClick={() => navigate('/levy-payment')}>
+                          <FileText className="mr-2 h-4 w-4" />
+                          Start new payment
+                        </Button>
+                      )}
+
+                      <Button variant="outline" size="lg" className="w-full" onClick={() => navigate('/dashboard')}>
+                        <Home className="mr-2 h-4 w-4" />
+                        Back to dashboard
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </PortalPageShell>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PortalPageShell } from "@/components/portal/PortalPageShell";
 import { UserPlus, CheckCircle2, Circle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -400,12 +401,24 @@ export default function Register() {
 
   return (
     <Layout>
-      <div className="py-6 sm:py-8 bg-muted/30 min-h-screen">
+      <div className="min-h-screen bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--secondary)/0.45))] py-6 sm:py-8">
         <div className="container mx-auto px-3 sm:px-4">
           <div className="max-w-5xl mx-auto">
+            <PortalPageShell
+              eyebrow="NAPPS Nasarawa Registration"
+              title="Register your school with more clarity"
+              description="The registration flow now uses stronger visual guidance inspired by SPRS, with clearer steps, better progress cues, and a smoother path back into unfinished work."
+              badge="3 guided steps"
+              icon={UserPlus}
+              stats={[
+                { label: "Step 1", value: "Identity", helper: "Profile and chapter details." },
+                { label: "Step 2", value: "School", helper: "Campus profile and enrollment." },
+                { label: "Step 3", value: "Payment", helper: "Fees, declaration, and checkout." },
+              ]}
+            >
             {/* Resume Registration Dialog */}
             {showResumeDialog && (
-              <Card className="mb-6 border-2 border-primary shadow-lg">
+              <Card className="portal-panel mb-6 border-2 border-primary/30 shadow-lg">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <AlertCircle className="w-5 h-5 text-primary" />
@@ -469,28 +482,20 @@ export default function Register() {
               </Card>
             )}
 
-            {/* Header */}
-            <div className="text-center mb-6 sm:mb-8">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4 flex items-center justify-center gap-2 flex-wrap">
-                <UserPlus className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-                <span>New Proprietor Registration</span>
-              </h1>
-              <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-                Complete all three steps to register your school with NAPPS Nasarawa State
-              </p>
-              {!showResumeDialog && (
+            {!showResumeDialog && (
+              <div className="flex justify-end">
                 <Button
                   variant="link"
                   onClick={() => setShowResumeDialog(true)}
-                  className="mt-2 text-xs sm:text-sm"
+                  className="text-xs sm:text-sm"
                 >
                   Already started? Resume Registration
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Progress Bar */}
-            <div className="mb-6 sm:mb-8">
+            <div className="portal-panel mb-6 space-y-4 p-5 sm:mb-8 sm:p-6">
               <Progress value={progressPercentage} className="h-2 mb-4" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 {steps.map((step) => (
@@ -529,7 +534,7 @@ export default function Register() {
             </div>
 
             {/* Step Content */}
-            <Card className="elegant-shadow">
+            <Card className="portal-panel elegant-shadow">
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="text-lg sm:text-xl md:text-2xl">
                   Step {currentStep}: {steps[currentStep - 1].title}
@@ -568,7 +573,7 @@ export default function Register() {
             </Card>
 
             {/* Help Text */}
-            <Alert className="mt-4 sm:mt-6">
+            <Alert className="portal-panel-muted mt-4 border-primary/10 sm:mt-6">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-xs sm:text-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -593,6 +598,7 @@ export default function Register() {
                 </div>
               </AlertDescription>
             </Alert>
+            </PortalPageShell>
           </div>
         </div>
       </div>

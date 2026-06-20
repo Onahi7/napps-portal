@@ -1,25 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Layout } from '@/components/Layout';
+import { PortalPageShell } from '@/components/portal/PortalPageShell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { 
-  CreditCard, 
-  School as SchoolIcon, 
-  User, 
-  Phone, 
-  Mail, 
-  Plus, 
-  Trash2,
-  Loader2,
-  FileText,
+import {
+  ArrowLeft,
+  Check,
+  CreditCard,
   Download,
-  Check
+  FileText,
+  Loader2,
+  Mail,
+  Phone,
+  Plus,
+  School as SchoolIcon,
+  Trash2,
+  User,
 } from 'lucide-react';
 
 interface School {
@@ -62,7 +64,7 @@ const NAPPS_CHAPTERS = [
   'Jenkwe',
   'Uke Chapter',
   'Nasarawa Eggon',
-  'Nas Poly'
+  'Nas Poly',
 ];
 
 const LEVY_AMOUNT = 5600;
@@ -72,11 +74,13 @@ const PAYMENT_CHARGE = 100;
 const LevyPayment = () => {
   const navigate = useNavigate();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
-  
+
   const [loading, setLoading] = useState(false);
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
   const [loadingSchools, setLoadingSchools] = useState(true);
   const [schools, setSchools] = useState<School[]>([]);
+  const [existingPayment, setExistingPayment] = useState<any>(null);
+  const [showManualSchoolInput, setShowManualSchoolInput] = useState(false);
   const [formData, setFormData] = useState<LevyPaymentFormData>({
     memberName: '',
     email: '',
@@ -86,10 +90,7 @@ const LevyPayment = () => {
     isManualSchoolEntry: false,
     wards: [{ id: '1', name: '' }],
   });
-  const [existingPayment, setExistingPayment] = useState<any>(null);
-  const [showManualSchoolInput, setShowManualSchoolInput] = useState(false);
 
-  // Load saved form data from localStorage on mount
   useEffect(() => {
     const savedData = localStorage.getItem('levyPaymentFormData');
     if (savedData) {
@@ -103,11 +104,9 @@ const LevyPayment = () => {
       }
     }
 
-    // Fetch schools
     fetchSchools();
   }, []);
 
-  // Save form data to localStorage whenever it changes
   useEffect(() => {
     if (formData.email || formData.phone || formData.memberName) {
       localStorage.setItem('levyPaymentFormData', JSON.stringify(formData));
@@ -117,25 +116,20 @@ const LevyPayment = () => {
   const fetchSchools = async (selectedChapter?: string) => {
     setLoadingSchools(true);
     try {
-      // Use PostgreSQL endpoint for accurate school-chapter mappings
-      const url = selectedChapter 
+      const url = selectedChapter
         ? `${API_BASE_URL}/levy-payments/schools/postgres?chapter=${encodeURIComponent(selectedChapter)}`
         : `${API_BASE_URL}/levy-payments/schools/postgres`;
-      
-      console.log('Fetching schools from PostgreSQL:', url);
+
       const response = await fetch(url);
-      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      console.log('Schools fetched from PostgreSQL:', data.length, selectedChapter ? `for chapter: ${selectedChapter}` : '(all)');
-      
-      if (data && Array.isArray(data)) {
+      if (Array.isArray(data)) {
         setSchools(data);
         if (data.length === 0) {
-          toast.info('No schools found for this chapter. Please enter school name manually.');
+          toast.info('No schools found for this chapter. Please enter the school name manually.');
           setShowManualSchoolInput(true);
           handleInputChange('isManualSchoolEntry', true);
         } else {
@@ -148,7 +142,7 @@ const LevyPayment = () => {
     } catch (error: any) {
       console.error('Error fetching schools:', error);
       toast.error('Failed to load schools', {
-        description: 'Please enter your school name manually or try refreshing the page.',
+        description: 'Please enter your school name manually or refresh the page.',
       });
       setShowManualSchoolInput(true);
       handleInputChange('isManualSchoolEntry', true);
@@ -162,15 +156,17 @@ const LevyPayment = () => {
   };
 
   const addWard = () => {
-    const newWard: Ward = { id: Date.now().toString(), name: '' };
-    setFormData((prev) => ({ ...prev, wards: [...prev.wards, newWard] }));
+    setFormData((prev) => ({
+      ...prev,
+      wards: [...prev.wards, { id: Date.now().toString(), name: '' }],
+    }));
   };
 
   const removeWard = (id: string) => {
     if (formData.wards.length > 1) {
       setFormData((prev) => ({
         ...prev,
-        wards: prev.wards.filter((w) => w.id !== id),
+        wards: prev.wards.filter((ward) => ward.id !== id),
       }));
     }
   };
@@ -178,14 +174,12 @@ const LevyPayment = () => {
   const updateWard = (id: string, name: string) => {
     setFormData((prev) => ({
       ...prev,
-      wards: prev.wards.map((w) => (w.id === id ? { ...w, name } : w)),
+      wards: prev.wards.map((ward) => (ward.id === id ? { ...ward, name } : ward)),
     }));
   };
 
   const checkDuplicate = async () => {
-    if (!formData.email && !formData.phone) {
-      return;
-    }
+    if (!formData.email && !formData.phone) return;
 
     setCheckingDuplicate(true);
     try {
@@ -208,7 +202,7 @@ const LevyPayment = () => {
             });
           } else {
             toast.error('Payment already completed', {
-              description: 'A payment with this email/phone has already been completed successfully.',
+              description: 'A levy payment with this email or phone has already been completed.',
             });
             return false;
           }
@@ -219,106 +213,73 @@ const LevyPayment = () => {
     } finally {
       setCheckingDuplicate(false);
     }
+
     return true;
   };
 
-  const handleEmailBlur = () => {
-    if (formData.email) {
-      checkDuplicate();
-    }
-  };
-
-  const handlePhoneBlur = () => {
-    if (formData.phone) {
-      checkDuplicate();
-    }
-  };
-
-  const validateForm = (): boolean => {
+  const validateForm = () => {
     if (!formData.memberName.trim()) {
       toast.error('Please enter your name');
       return false;
     }
-
     if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       toast.error('Please enter a valid email address');
       return false;
     }
-
     if (!formData.phone.trim() || formData.phone.length < 10) {
       toast.error('Please enter a valid phone number');
       return false;
     }
-
     if (!formData.chapter) {
       toast.error('Please select a chapter');
       return false;
     }
-
     if (!formData.schoolName.trim()) {
       toast.error('Please select or enter a school name');
       return false;
     }
-
-    const validWards = formData.wards.filter((w) => w.name.trim());
-    if (validWards.length === 0) {
+    if (formData.wards.filter((ward) => ward.name.trim()).length === 0) {
       toast.error('Please add at least one ward');
       return false;
     }
-
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!validateForm()) return;
 
-    if (!validateForm()) {
-      return;
-    }
-
-    // Check for duplicates before proceeding
     const canProceed = await checkDuplicate();
-    if (canProceed === false) {
-      return;
-    }
+    if (canProceed === false) return;
 
     setLoading(true);
-
     try {
-      // Try to get proprietor ID from localStorage (optional - for auto-linking)
       const proprietorData = localStorage.getItem('proprietor');
-      let proprietorId = undefined;
+      let proprietorId: string | undefined;
 
       if (proprietorData) {
         try {
           const parsed = JSON.parse(proprietorData);
           proprietorId = parsed._id || parsed.submissionId;
-          console.log('Found logged in proprietor:', proprietorId);
         } catch (error) {
-          console.log('No proprietor logged in - proceeding as public payment');
+          console.error('Unable to parse proprietor session:', error);
         }
       }
 
-      const wardNames = formData.wards.filter((w) => w.name.trim()).map((w) => w.name);
-
-      // proprietorId is now optional - backend will auto-link by email/phone if proprietor exists
-      const payload: any = {
+      const payload: Record<string, any> = {
         memberName: formData.memberName,
         email: formData.email,
         phone: formData.phone,
         chapter: formData.chapter,
         schoolName: formData.schoolName,
         isManualSchoolEntry: formData.isManualSchoolEntry,
-        wards: wardNames,
+        wards: formData.wards.filter((ward) => ward.name.trim()).map((ward) => ward.name),
         amount: LEVY_AMOUNT,
-        isContinuation: !!existingPayment,
+        isContinuation: Boolean(existingPayment),
         previousPaymentReference: existingPayment?.reference,
       };
 
-      // Only include proprietorId if logged in
-      if (proprietorId) {
-        payload.proprietorId = proprietorId;
-      }
+      if (proprietorId) payload.proprietorId = proprietorId;
 
       const response = await fetch(`${API_BASE_URL}/levy-payments/initialize`, {
         method: 'POST',
@@ -332,8 +293,6 @@ const LevyPayment = () => {
       }
 
       const result = await response.json();
-
-      // Save reference for later use
       localStorage.setItem('levyPaymentReference', result.reference);
       localStorage.setItem('levyReceiptNumber', result.receiptNumber);
 
@@ -341,331 +300,327 @@ const LevyPayment = () => {
         description: 'Your progress has been saved.',
       });
 
-      // Redirect to Flutterwave payment page
       setTimeout(() => {
         window.location.href = result.paymentUrl;
       }, 500);
     } catch (error: any) {
       console.error('Payment initialization error:', error);
       toast.error('Payment initialization failed', {
-        description: error.message || 'Please try again',
+        description: error.message || 'Please try again.',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleContinueExisting = async () => {
+  const handleContinueExisting = () => {
     if (!existingPayment) return;
-
     toast.info('Continuing with existing payment...');
-    
-    // Redirect to existing payment URL or verification
     navigate(`/levy-payment/verify?reference=${existingPayment.reference}`);
   };
 
   const toggleManualSchool = () => {
-    setShowManualSchoolInput(!showManualSchoolInput);
+    setShowManualSchoolInput((prev) => !prev);
     handleInputChange('isManualSchoolEntry', !showManualSchoolInput);
     handleInputChange('schoolName', '');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            ← Back
-          </Button>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl flex items-center gap-2">
-                  <CreditCard className="w-6 h-6" />
-                  NAPPS Secretariat Building Levy
-                </CardTitle>
-                <CardDescription>Pay your NAPPS Nasarawa State Secretariat Building Levy</CardDescription>
-              </div>
-              <Badge variant="secondary" className="text-lg px-4 py-2">
-                ₦{LEVY_AMOUNT.toLocaleString()}
-              </Badge>
+    <Layout>
+      <div className="min-h-screen bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--secondary)/0.45))] py-8">
+        <div className="container mx-auto max-w-5xl px-4">
+          <PortalPageShell
+            eyebrow="Levy Collection"
+            title="Secretariat building levy"
+            description="This flow now follows the SPRS-style fidelity upgrade with cleaner payment framing, stronger guidance around chapter and school selection, and easier recovery when a payment is already in progress."
+            badge={`NGN ${LEVY_AMOUNT.toLocaleString()}`}
+            icon={CreditCard}
+            stats={[
+              { label: 'Base levy', value: `NGN ${LEVY_BASE.toLocaleString()}`, helper: 'Core chapter levy amount.' },
+              { label: 'Processing', value: `NGN ${PAYMENT_CHARGE.toLocaleString()}`, helper: 'Gateway and transaction fee.' },
+              { label: 'Coverage', value: 'All chapters', helper: 'School lookup narrows after chapter selection.' },
+            ]}
+          >
+            <div className="mb-2">
+              <Button variant="ghost" onClick={() => navigate(-1)} className="rounded-full px-0 text-sm">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to previous page
+              </Button>
             </div>
-          </CardHeader>
 
-          <CardContent>
-            {existingPayment && (
-              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h3 className="font-semibold text-yellow-800 mb-2">Existing Payment Detected</h3>
-                <p className="text-sm text-yellow-700 mb-3">
-                  You have a pending payment. You can continue with it or start a new payment.
-                </p>
-                <Button onClick={handleContinueExisting} variant="outline" size="sm">
-                  Continue Existing Payment
-                </Button>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Personal Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Personal Information
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="portal-panel">
+              <CardHeader>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <Label htmlFor="memberName">Full Name *</Label>
-                    <Input
-                      id="memberName"
-                      placeholder="Enter your full name"
-                      value={formData.memberName}
-                      onChange={(e) => handleInputChange('memberName', e.target.value)}
-                      required
-                    />
+                    <CardTitle className="flex items-center gap-2 text-2xl">
+                      <CreditCard className="h-6 w-6" />
+                      NAPPS Secretariat Building Levy
+                    </CardTitle>
+                    <CardDescription>Pay your NAPPS Nasarawa State secretariat building levy.</CardDescription>
                   </div>
-
-                  <div>
-                    <Label htmlFor="email">Email Address *</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="your@email.com"
-                        className="pl-10"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        onBlur={handleEmailBlur}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="080XXXXXXXX"
-                        className="pl-10"
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        onBlur={handlePhoneBlur}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="chapter">Chapter *</Label>
-                    <Select 
-                      value={formData.chapter} 
-                      onValueChange={(value) => handleInputChange('chapter', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your chapter" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {NAPPS_CHAPTERS.map((chapter) => (
-                          <SelectItem key={chapter} value={chapter}>
-                            {chapter}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {formData.chapter && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Schools will be filtered for {formData.chapter}
-                      </p>
-                    )}
-                  </div>
+                  <Badge variant="secondary" className="px-4 py-2 text-lg">
+                    NGN {LEVY_AMOUNT.toLocaleString()}
+                  </Badge>
                 </div>
-              </div>
+              </CardHeader>
 
-              {/* School Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <SchoolIcon className="w-5 h-5" />
-                  School Information
-                </h3>
-
-                {!formData.chapter && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
-                    ℹ️ Please select a chapter first to see available schools
-                  </div>
-                )}
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="school">School Name *</Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={toggleManualSchool}
-                    >
-                      {showManualSchoolInput ? 'Select from List' : 'Manual Entry'}
+              <CardContent>
+                {existingPayment && (
+                  <div className="portal-panel-muted mb-6 border border-amber-200/70 p-4">
+                    <h3 className="mb-2 font-semibold text-amber-800">Existing payment detected</h3>
+                    <p className="mb-3 text-sm text-amber-700">
+                      We found a pending levy payment for this contact. You can continue it or start a new one.
+                    </p>
+                    <Button onClick={handleContinueExisting} variant="outline" size="sm">
+                      Continue existing payment
                     </Button>
                   </div>
+                )}
 
-                  {showManualSchoolInput ? (
-                    <Input
-                      id="school-manual"
-                      placeholder="Enter school name manually"
-                      value={formData.schoolName}
-                      onChange={(e) => handleInputChange('schoolName', e.target.value)}
-                      required
-                    />
-                  ) : loadingSchools ? (
-                    <div className="flex items-center gap-2 p-2 border rounded-md">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm text-muted-foreground">
-                        {formData.chapter ? `Loading schools for ${formData.chapter}...` : 'Loading schools...'}
-                      </span>
-                    </div>
-                  ) : (
-                    <Select 
-                      value={formData.schoolName} 
-                      onValueChange={(value) => handleInputChange('schoolName', value)}
-                      disabled={!formData.chapter}
-                    >
-                      <SelectTrigger>
-                        <SelectValue 
-                          placeholder={
-                            !formData.chapter 
-                              ? "Select a chapter first" 
-                              : schools.length > 0 
-                                ? `Select your school (${schools.length} available)` 
-                                : "No schools available - use manual entry"
-                          } 
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="portal-panel-muted space-y-4 border border-primary/10 p-5">
+                    <h3 className="flex items-center gap-2 text-lg font-semibold">
+                      <User className="h-5 w-5" />
+                      Personal information
+                    </h3>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <Label htmlFor="memberName">Full Name *</Label>
+                        <Input
+                          id="memberName"
+                          placeholder="Enter your full name"
+                          value={formData.memberName}
+                          onChange={(e) => handleInputChange('memberName', e.target.value)}
+                          required
                         />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {schools.length > 0 ? (
-                          schools.map((school) => (
-                            <SelectItem key={school.id} value={school.name}>
-                              {school.name} {school.lga && `(${school.lga})`}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="p-2 text-sm text-muted-foreground text-center">
-                            No schools available for {formData.chapter}
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              </div>
+                      </div>
 
-              {/* Wards */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Wards *</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={addWard}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Ward
-                  </Button>
-                </div>
+                      <div>
+                        <Label htmlFor="email">Email Address *</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="email"
+                            type="email"
+                            placeholder="your@email.com"
+                            className="pl-10"
+                            value={formData.email}
+                            onChange={(e) => handleInputChange('email', e.target.value)}
+                            onBlur={() => formData.email && checkDuplicate()}
+                            required
+                          />
+                        </div>
+                      </div>
 
-                <div className="space-y-3">
-                  {formData.wards.map((ward, index) => (
-                    <div key={ward.id} className="flex items-center gap-2">
-                      <Input
-                        placeholder={`Ward ${index + 1} name`}
-                        value={ward.name}
-                        onChange={(e) => updateWard(ward.id, e.target.value)}
-                      />
-                      {formData.wards.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeWard(ward.id)}
+                      <div>
+                        <Label htmlFor="phone">Phone Number *</Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="phone"
+                            type="tel"
+                            placeholder="080XXXXXXXX"
+                            className="pl-10"
+                            value={formData.phone}
+                            onChange={(e) => handleInputChange('phone', e.target.value)}
+                            onBlur={() => formData.phone && checkDuplicate()}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="chapter">Chapter *</Label>
+                        <Select
+                          value={formData.chapter}
+                          onValueChange={(value) => {
+                            handleInputChange('chapter', value);
+                            handleInputChange('schoolName', '');
+                            fetchSchools(value);
+                          }}
                         >
-                          <Trash2 className="w-4 h-4 text-destructive" />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your chapter" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {NAPPS_CHAPTERS.map((chapter) => (
+                              <SelectItem key={chapter} value={chapter}>
+                                {chapter}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {formData.chapter && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Schools will be filtered for {formData.chapter}.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="portal-panel-muted space-y-4 border border-primary/10 p-5">
+                    <h3 className="flex items-center gap-2 text-lg font-semibold">
+                      <SchoolIcon className="h-5 w-5" />
+                      School information
+                    </h3>
+
+                    {!formData.chapter && (
+                      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
+                        Please select a chapter first to see available schools.
+                      </div>
+                    )}
+
+                    <div>
+                      <div className="mb-2 flex items-center justify-between">
+                        <Label htmlFor="school">School Name *</Label>
+                        <Button type="button" variant="ghost" size="sm" onClick={toggleManualSchool}>
+                          {showManualSchoolInput ? 'Select from list' : 'Manual entry'}
                         </Button>
+                      </div>
+
+                      {showManualSchoolInput ? (
+                        <Input
+                          id="school-manual"
+                          placeholder="Enter school name manually"
+                          value={formData.schoolName}
+                          onChange={(e) => handleInputChange('schoolName', e.target.value)}
+                          required
+                        />
+                      ) : loadingSchools ? (
+                        <div className="flex items-center gap-2 rounded-xl border bg-background p-3">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm text-muted-foreground">
+                            {formData.chapter ? `Loading schools for ${formData.chapter}...` : 'Loading schools...'}
+                          </span>
+                        </div>
+                      ) : (
+                        <Select
+                          value={formData.schoolName}
+                          onValueChange={(value) => handleInputChange('schoolName', value)}
+                          disabled={!formData.chapter}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                !formData.chapter
+                                  ? 'Select a chapter first'
+                                  : schools.length > 0
+                                    ? `Select your school (${schools.length} available)`
+                                    : 'No schools available. Use manual entry.'
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {schools.length > 0 ? (
+                              schools.map((school) => (
+                                <SelectItem key={school.id} value={school.name}>
+                                  {school.name} {school.lga ? `(${school.lga})` : ''}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <div className="p-2 text-center text-sm text-muted-foreground">
+                                No schools available for {formData.chapter}.
+                              </div>
+                            )}
+                          </SelectContent>
+                        </Select>
                       )}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* Payment Summary */}
-              <div className="bg-primary/5 p-6 rounded-lg space-y-3">
-                <h3 className="font-semibold text-lg">Payment Summary</h3>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Levy Amount:</span>
-                  <span>₦{LEVY_BASE.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Payment Processing Charge:</span>
-                  <span>₦{PAYMENT_CHARGE.toLocaleString()}</span>
-                </div>
-                <div className="border-t pt-2 flex justify-between items-center">
-                  <span className="font-semibold">Total:</span>
-                  <span className="text-2xl font-bold">₦{LEVY_AMOUNT.toLocaleString()}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">Includes ₦{PAYMENT_CHARGE} payment processing charge</p>
-              </div>
+                  <div className="portal-panel-muted space-y-4 border border-primary/10 p-5">
+                    <div className="flex items-center justify-between">
+                      <Label>Wards *</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={addWard}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Ward
+                      </Button>
+                    </div>
 
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full"
-                disabled={loading || checkingDuplicate}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Proceed to Payment
-                  </>
-                )}
-              </Button>
+                    <div className="space-y-3">
+                      {formData.wards.map((ward, index) => (
+                        <div key={ward.id} className="flex items-center gap-2">
+                          <Input
+                            placeholder={`Ward ${index + 1} name`}
+                            value={ward.name}
+                            onChange={(e) => updateWard(ward.id, e.target.value)}
+                          />
+                          {formData.wards.length > 1 && (
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removeWard(ward.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-              <p className="text-xs text-center text-muted-foreground">
-                Your information is saved automatically. You can return anytime to complete the payment.
-              </p>
-            </form>
-          </CardContent>
-        </Card>
+                  <div className="portal-panel-muted space-y-3 border border-primary/10 p-6">
+                    <h3 className="text-lg font-semibold">Payment summary</h3>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Levy amount:</span>
+                      <span>NGN {LEVY_BASE.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Payment processing charge:</span>
+                      <span>NGN {PAYMENT_CHARGE.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t pt-2">
+                      <span className="font-semibold">Total:</span>
+                      <span className="text-2xl font-bold">NGN {LEVY_AMOUNT.toLocaleString()}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Includes NGN {PAYMENT_CHARGE.toLocaleString()} payment processing charge.
+                    </p>
+                  </div>
 
-        {/* Receipt Download Section */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="w-5 h-5" />
-              Download Receipt
-            </CardTitle>
-            <CardDescription>
-              Enter your email or phone number to download your payment receipt
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => navigate('/levy-payment/download')}
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Download Receipt
-            </Button>
-          </CardContent>
-        </Card>
+                  <Button type="submit" size="lg" className="w-full" disabled={loading || checkingDuplicate}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Proceed to payment
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-center text-xs text-muted-foreground">
+                    Your information is saved automatically, so you can return later if needed.
+                  </p>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="portal-panel">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Download className="h-5 w-5" />
+                  Download receipt
+                </CardTitle>
+                <CardDescription>Use your saved contact details to download a completed levy receipt.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full" onClick={() => navigate('/levy-payment/download')}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Open receipt download
+                </Button>
+              </CardContent>
+            </Card>
+
+            <div className="portal-panel-muted flex items-start gap-3 border border-primary/10 p-4 text-sm text-muted-foreground">
+              <Check className="mt-0.5 h-4 w-4 text-primary" />
+              Chapter assignment controls which schools appear. If your school is missing, switch to manual entry and continue without losing your saved progress.
+            </div>
+          </PortalPageShell>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

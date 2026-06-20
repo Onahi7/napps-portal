@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PortalPageShell } from '@/components/portal/PortalPageShell';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -327,22 +328,28 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
   }, {} as Record<string, number>);
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Chapters Management</h1>
-          <p className="text-gray-600 mt-1">Assign and manage NAPPS chapters for proprietors</p>
-        </div>
+    <PortalPageShell
+      eyebrow="Admin Assignment"
+      title="Chapter management"
+      description="Apply the same higher-fidelity admin treatment here: faster scanning, clearer assignment state, and a stronger overview before you edit proprietor chapter access."
+      badge={`${NAPPS_CHAPTERS.length} chapters`}
+      icon={MapPin}
+      stats={[
+        { label: 'Proprietors', value: chaptersStats.total.toString(), helper: 'All records available for assignment.' },
+        { label: 'Assigned', value: chaptersStats.assigned.toString(), helper: 'Already linked to at least one chapter.' },
+        { label: 'Unassigned', value: chaptersStats.unassigned.toString(), helper: 'Still waiting for chapter mapping.' },
+      ]}
+    >
+      <div className="flex justify-end">
         <Button disabled>
-          <Download className="w-4 h-4 mr-2" />
+          <Download className="mr-2 h-4 w-4" />
           Export Report
         </Button>
       </div>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="portal-panel">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Users className="w-5 h-5 text-blue-600" />
@@ -353,7 +360,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="portal-panel">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <UserCheck className="w-5 h-5 text-green-600" />
@@ -364,7 +371,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="portal-panel">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <AlertCircle className="w-5 h-5 text-orange-600" />
@@ -375,7 +382,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="portal-panel">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <BookOpen className="w-5 h-5 text-purple-600" />
@@ -390,7 +397,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
 
       {/* Bulk Assignment Card */}
       {selectedProprietors.size > 0 && (
-        <Card className="border-blue-200 bg-blue-50">
+        <Card className="portal-panel border-blue-200 bg-blue-50">
           <CardHeader>
             <CardTitle className="text-blue-900">
               Bulk Chapter Assignment ({selectedProprietors.size} selected)
@@ -449,7 +456,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
       )}
 
       {/* Main Content */}
-      <Card>
+      <Card className="portal-panel">
         <CardHeader>
           <CardTitle>All Proprietors</CardTitle>
           <CardDescription>
@@ -496,7 +503,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
           </div>
 
           {/* Table */}
-          <div className="border rounded-lg">
+          <div className="rounded-2xl border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -621,7 +628,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PortalPageShell>
   );
 }
 
