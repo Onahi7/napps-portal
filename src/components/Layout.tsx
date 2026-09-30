@@ -28,7 +28,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             </Link>
 
             {/* Navigation */}
-            <nav className="hidden md:flex items-center gap-6">
+            <nav className="hidden lg:flex items-center gap-5 text-sm">
               <Link 
                 to="/" 
                 className="text-foreground hover:text-primary smooth-transition font-medium"
@@ -40,6 +40,31 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 className="text-foreground hover:text-primary smooth-transition font-medium"
               >
                 Register
+              </Link>
+              <Link 
+                to="/nnsuce" 
+                className="text-foreground hover:text-primary smooth-transition font-semibold flex items-center gap-1.5"
+              >
+                <span>NNSUCE Exams</span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-400 text-slate-950">AI &amp; OMR</span>
+              </Link>
+              <Link 
+                to="/monitoring" 
+                className="text-foreground hover:text-primary smooth-transition font-medium"
+              >
+                Dues Remittances
+              </Link>
+              <Link 
+                to="/validation-form" 
+                className="text-foreground hover:text-primary smooth-transition font-medium"
+              >
+                Validation Form
+              </Link>
+              <Link 
+                to="/verify" 
+                className="text-foreground hover:text-primary smooth-transition font-medium"
+              >
+                Verify Member ID
               </Link>
               {!isAdminRoute && (
                 <Link to="/admin">
@@ -84,8 +109,17 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 <Link to="/register" className="block hover:text-accent smooth-transition">
                   New Registration
                 </Link>
-                <Link to="/payment-status" className="block hover:text-accent smooth-transition">
-                  Payment Status
+                <Link to="/nnsuce" className="block hover:text-accent smooth-transition">
+                  NNSUCE Unified Examination
+                </Link>
+                <Link to="/monitoring" className="block hover:text-accent smooth-transition">
+                  Dues Remittances &amp; Ledgers
+                </Link>
+                <Link to="/validation-form" className="block hover:text-accent smooth-transition text-amber-300 font-medium">
+                  Official Validation Form (A4)
+                </Link>
+                <Link to="/verify" className="block hover:text-accent smooth-transition">
+                  Verify Membership ID
                 </Link>
               </div>
             </div>

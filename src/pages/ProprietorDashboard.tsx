@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,9 +21,16 @@ import {
   Award,
   FileText,
   Camera,
-  DollarSign
+  DollarSign,
+  ShieldCheck,
+  FileCheck,
+  QrCode
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { MembershipIdCard } from '@/components/dues/MembershipIdCard';
+import { OfficialReceiptModal } from '@/components/dues/OfficialReceiptModal';
+import { DuesDistributionBreakdown } from '@/components/dues/DuesDistributionBreakdown';
+import { NappsMembershipValidationForm } from '@/components/validation-form/NappsMembershipValidationForm';
 
 interface ProprietorData {
   _id?: string;
@@ -70,6 +77,7 @@ export const ProprietorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('personal');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -380,11 +388,36 @@ export const ProprietorDashboard = () => {
                 )}
               </div>
 
+              <div className="pt-4 border-t space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="flex-1 text-xs border-emerald-300 text-emerald-800"
+                    onClick={() => setReceiptModalOpen(true)}
+                  >
+                    <FileCheck className="w-4 h-4 mr-2" />
+                    View &amp; Print Official Electronic Receipt
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 text-xs"
+                    onClick={() => setActiveTab('idcard')}
+                  >
+                    <ShieldCheck className="w-4 h-4 mr-2 text-emerald-600" />
+                    View Membership ID Card
+                  </Button>
+                </div>
+
+                <DuesDistributionBreakdown totalAmount={proprietor.totalAmountDue || 14500} />
+              </div>
+
               {proprietor.clearingStatus !== 'cleared' && proprietor.totalAmountDue && proprietor.totalAmountDue > 0 && (
                 <div className="pt-6 border-t">
                   <Button 
                     size="lg" 
-                    className="w-full"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 font-bold"
                     onClick={handlePayment}
                   >
                     <CreditCard className="w-4 h-4 mr-2" />
@@ -453,6 +486,64 @@ export const ProprietorDashboard = () => {
               )}
             </CardContent>
           </Card>
+      case 'idcard':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                Official NAPPS Membership Identification Card
+              </CardTitle>
+              <CardDescription>
+                Accredited digital &amp; printable PVC credential with scannable QR verification.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <MembershipIdCard
+                data={{
+                  membershipId: (proprietor as any).nappsMembershipId || `NAPPS/NAS/2026/${(proprietor.lga || 'LAF').slice(0, 3).toUpperCase()}/0142`,
+                  fullName: proprietor.name || `${proprietor.firstName || ''} ${proprietor.lastName || ''}`.trim(),
+                  schoolName: proprietor.schoolName || 'NAPPS Affiliated School',
+                  lga: proprietor.lga || 'Lafia',
+                  passportPhoto: proprietor.passportPhotoUrl,
+                  validSession: '2025/2026',
+                  clearingStatus: proprietor.clearingStatus || 'cleared'
+                }}
+              />
+            </CardContent>
+          </Card>
+        );
+
+      case 'validation':
+        return (
+          <div className="space-y-4">
+            <NappsMembershipValidationForm
+              initialData={{
+                schoolName: proprietor.schoolName || '',
+                schoolAddress: (proprietor as any).schoolAddress || (proprietor as any).address || '',
+                schoolPhone: (proprietor as any).schoolPhone || proprietor.phone || '',
+                aegeLgeaDa: (proprietor as any).aegeLgeaDa || `${proprietor.lga || 'Lafia'} Central DA`,
+                lga: proprietor.lga || 'Lafia',
+                yearOfEstablishment: (proprietor as any).yearOfEstablishment || 2018,
+                schoolRegistrationStatus: (proprietor as any).schoolRegistrationStatus || 'REGISTERED',
+                levelsOfEducation: (proprietor as any).levelsOfEducation || 'Nursery/Primary',
+                typeOfSchool: (proprietor as any).typeOfSchool || 'Regular',
+                ownership: (proprietor as any).ownership || 'Individualist',
+                fullName: proprietor.name || `${proprietor.firstName || ''} ${proprietor.lastName || ''}`.trim(),
+                chapter: (proprietor.chapters && proprietor.chapters[0]) || `${proprietor.lga || 'Lafia'} Chapter`,
+                schoolCode: (proprietor as any).schoolCode || `SCH/${(proprietor.lga || 'LAF').slice(0, 3).toUpperCase()}/082`,
+                phone: proprietor.phone || '',
+                email: proprietor.email || '',
+                positionInNapps: (proprietor as any).positionInNapps || proprietor.positionHeld || 'Member',
+                passportPhoto: proprietor.passportPhotoUrl,
+                membershipId: (proprietor as any).nappsMembershipId || `NAPPS/NAS/2026/${(proprietor.lga || 'LAF').slice(0, 3).toUpperCase()}/0042`,
+                hasNappsIdCard: (proprietor as any).hasNappsIdCard !== undefined ? Boolean((proprietor as any).hasNappsIdCard) : true,
+                nnsuceTimesWritten: (proprietor as any).nnsuceTimesWritten || '2',
+                nnsuce2025PupilsCount: (proprietor as any).nnsuce2025PupilsCount || proprietor.pupilsPresentedLastExam || 42,
+              }}
+              isEditable={true}
+            />
+          </div>
         );
 
       default:
@@ -470,7 +561,13 @@ export const ProprietorDashboard = () => {
               <h1 className="text-3xl font-bold">Proprietor Dashboard</h1>
               <p className="text-muted-foreground">Welcome back, {displayName}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <Link to="/validation-form">
+                <Button variant="outline" size="sm" className="border-amber-400 text-amber-900 bg-amber-50 hover:bg-amber-100 font-semibold text-xs">
+                  <FileText className="w-4 h-4 mr-1.5" />
+                  Official Validation Form (A4)
+                </Button>
+              </Link>
               <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Profile
@@ -596,7 +693,9 @@ export const ProprietorDashboard = () => {
               {[
                 { value: 'personal', label: 'Personal', icon: User },
                 { value: 'school', label: 'School', icon: School },
-                { value: 'payment', label: 'Payment', icon: CreditCard },
+                { value: 'payment', label: 'Payment & Dues', icon: CreditCard },
+                { value: 'idcard', label: 'Official ID Card', icon: ShieldCheck },
+                { value: 'validation', label: 'Validation Form', icon: FileText },
                 { value: 'napps', label: 'NAPPS', icon: Award },
               ].map((tab) => (
                 <button
@@ -620,28 +719,47 @@ export const ProprietorDashboard = () => {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg z-50">
-        <div className="grid grid-cols-4 gap-1 px-2 py-2 safe-area-inset-bottom">
+        <div className="grid grid-cols-5 gap-1 px-1 py-2 safe-area-inset-bottom">
           {[
             { value: 'personal', label: 'Personal', icon: User },
             { value: 'school', label: 'School', icon: School },
-            { value: 'payment', label: 'Payment', icon: CreditCard },
+            { value: 'payment', label: 'Dues', icon: CreditCard },
+            { value: 'idcard', label: 'ID Card', icon: ShieldCheck },
             { value: 'napps', label: 'NAPPS', icon: Award },
           ].map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg transition-colors ${
+              className={`flex flex-col items-center gap-1 py-1.5 px-0.5 rounded-lg transition-colors ${
                 activeTab === tab.value
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground active:bg-gray-100'
               }`}
             >
-              <tab.icon className={`w-5 h-5 ${activeTab === tab.value ? 'stroke-[2.5]' : ''}`} />
-              <span className="text-xs font-medium">{tab.label}</span>
+              <tab.icon className={`w-4 h-4 ${activeTab === tab.value ? 'stroke-[2.5]' : ''}`} />
+              <span className="text-[10px] font-medium">{tab.label}</span>
             </button>
           ))}
         </div>
       </div>
+
+      {/* Official Receipt Modal */}
+      {proprietor && (
+        <OfficialReceiptModal
+          open={receiptModalOpen}
+          onOpenChange={setReceiptModalOpen}
+          data={{
+            payerName: proprietor.name || `${proprietor.firstName || ''} ${proprietor.lastName || ''}`.trim(),
+            schoolName: proprietor.schoolName || 'NAPPS Affiliated School',
+            email: proprietor.email,
+            phone: proprietor.phone,
+            lga: proprietor.lga || 'Lafia',
+            membershipId: (proprietor as any).nappsMembershipId || `NAPPS/NAS/2026/${(proprietor.lga || 'LAF').slice(0, 3).toUpperCase()}/0142`,
+            amountPaid: proprietor.totalAmountDue || 14500,
+            academicSession: '2025/2026'
+          }}
+        />
+      )}
 
       {/* Edit Profile Dialog */}
       <EditProfileDialog

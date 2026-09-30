@@ -47,13 +47,13 @@ const navigationItems = [
         name: 'Proprietors', 
         icon: Users, 
         page: 'proprietors' as const,
-        badge: '1,247'
+        badge: null
       },
       { 
         name: 'Schools', 
         icon: School, 
         page: 'schools' as const,
-        badge: '485'
+        badge: null
       },
       { 
         name: 'Chapters', 
@@ -70,7 +70,7 @@ const navigationItems = [
         name: 'Payments', 
         icon: CreditCard, 
         page: 'payments' as const,
-        badge: '391'
+        badge: null
       },
       { 
         name: 'Levy Payments', 

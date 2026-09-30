@@ -7,16 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2, Info, CreditCard, Upload, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Info, CreditCard, Upload, AlertCircle, Building2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const step3Schema = z.object({
-  paymentMethod: z.enum(['online', 'bank_transfer']),
+  paymentMethod: z.enum(['fidelity', 'online', 'bank_transfer']),
   confirmAccuracy: z.boolean().refine(val => val === true, {
     message: 'You must confirm the accuracy of the information'
   })
 });
+
 
 type Step3FormData = z.infer<typeof step3Schema>;
 
@@ -54,7 +56,7 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
   } = useForm<Step3FormData>({
     resolver: zodResolver(step3Schema),
     defaultValues: initialData || {
-      paymentMethod: 'online',
+      paymentMethod: 'fidelity',
       confirmAccuracy: false
     }
   });
@@ -66,7 +68,7 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
   useEffect(() => {
     const fetchFees = async () => {
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
         const response = await fetch(`${API_BASE_URL}/fees/active`);
         
         if (response.ok) {
@@ -158,10 +160,33 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
 
         <RadioGroup
           value={paymentMethod}
-          onValueChange={(value) => setValue('paymentMethod', value as 'online' | 'bank_transfer')}
+          onValueChange={(value) => setValue('paymentMethod', value as 'fidelity' | 'online' | 'bank_transfer')}
           className="space-y-3"
         >
-          {/* Online Payment */}
+          {/* Fidelity Bank Direct Transfer */}
+          <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+            paymentMethod === 'fidelity' 
+              ? 'border-emerald-600 bg-emerald-50/40 ring-1 ring-emerald-600' 
+              : 'border-gray-200 hover:border-gray-300'
+          }`}>
+            <RadioGroupItem value="fidelity" id="fidelity" className="mt-1 text-emerald-700" />
+            <Label htmlFor="fidelity" className="flex-1 cursor-pointer">
+              <div className="flex items-center gap-2 mb-1">
+                <Building2 className="w-4 h-4 text-emerald-700" />
+                <span className="font-semibold text-sm sm:text-base text-gray-900">
+                  Fidelity Bank Direct Transfer (Instant Virtual Account)
+                </span>
+                <Badge className="bg-emerald-600 text-white text-[11px] font-bold">
+                  Recommended
+                </Badge>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Get an instant dynamic Fidelity Bank account number and transfer from your bank app or USSD. Automatically verifies and issues your confirmation within seconds.
+              </p>
+            </Label>
+          </div>
+
+          {/* Paystack Online Payment */}
           <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
             paymentMethod === 'online' 
               ? 'border-primary bg-primary/5' 
@@ -171,10 +196,10 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
             <Label htmlFor="online" className="flex-1 cursor-pointer">
               <div className="flex items-center gap-2 mb-1">
                 <CreditCard className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-sm sm:text-base">Pay Online (Recommended)</span>
+                <span className="font-semibold text-sm sm:text-base">Pay with Card (Paystack)</span>
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Pay instantly with card, bank transfer, or USSD. Your registration will be processed immediately upon successful payment.
+                Pay with Debit Card (Mastercard, Visa, Verve) via Paystack gateway.
               </p>
             </Label>
           </div>
@@ -189,15 +214,16 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
             <Label htmlFor="bank_transfer" className="flex-1 cursor-pointer">
               <div className="flex items-center gap-2 mb-1">
                 <Upload className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-sm sm:text-base">Bank Transfer</span>
+                <span className="font-semibold text-sm sm:text-base">Manual Secretariat Bank Transfer</span>
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Make payment directly to NAPPS account. Registration will be marked as "Pending Payment Verification" until admin confirms your payment.
+                Make manual payment to the NAPPS state account. Registration will be marked as "Pending Payment Verification" until admin manually verifies proof.
               </p>
             </Label>
           </div>
         </RadioGroup>
       </div>
+
 
       {/* Bank Transfer Instructions */}
       {paymentMethod === 'bank_transfer' && (

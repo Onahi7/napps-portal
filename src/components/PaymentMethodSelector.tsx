@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CreditCard, Building2, Smartphone, Wallet, Zap } from 'lucide-react';
 
-export type PaymentMethodType = 'card' | 'bank_transfer' | 'ussd' | 'opay' | 'mobile_money';
+export type PaymentMethodType = 'fidelity' | 'card' | 'bank_transfer' | 'ussd' | 'opay' | 'mobile_money';
 
 interface PaymentMethodOption {
   value: PaymentMethodType;
@@ -22,10 +22,10 @@ interface PaymentMethodSelectorProps {
 
 const paymentMethods: PaymentMethodOption[] = [
   {
-    value: 'opay',
-    label: 'OPay',
-    description: 'Fast and secure payment with OPay wallet',
-    icon: <Zap className="w-5 h-5 text-green-600" />,
+    value: 'fidelity',
+    label: 'Fidelity Bank Direct Transfer',
+    description: 'Instant dynamic virtual account transfer with real-time settlement',
+    icon: <Building2 className="w-5 h-5 text-emerald-600" />,
     popular: true,
   },
   {
@@ -35,6 +35,7 @@ const paymentMethods: PaymentMethodOption[] = [
     icon: <CreditCard className="w-5 h-5 text-blue-600" />,
     popular: true,
   },
+
   {
     value: 'bank_transfer',
     label: 'Bank Transfer',

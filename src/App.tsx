@@ -17,6 +17,10 @@ import { PaymentSuccess } from "./pages/PaymentSuccess";
 import LevyPayment from "./pages/LevyPayment";
 import LevyPaymentVerify from "./pages/LevyPaymentVerify";
 import LevyPaymentDownload from "./pages/LevyPaymentDownload";
+import NnsucePortal from "./pages/NnsucePortal";
+import SchoolVerification from "./pages/SchoolVerification";
+import MonitoringDashboards from "./pages/MonitoringDashboards";
+import { ValidationFormPage } from "./pages/ValidationFormPage";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +51,13 @@ const App = () => (
           <Route path="/levy-payment" element={<LevyPayment />} />
           <Route path="/levy-payment/verify" element={<LevyPaymentVerify />} />
           <Route path="/levy-payment/download" element={<LevyPaymentDownload />} />
+          <Route path="/nnsuce" element={<NnsucePortal />} />
+          <Route path="/verify" element={<SchoolVerification />} />
+          <Route path="/verify-member" element={<SchoolVerification />} />
+          <Route path="/monitoring" element={<MonitoringDashboards />} />
+          <Route path="/dashboards" element={<MonitoringDashboards />} />
+          <Route path="/validation-form" element={<ValidationFormPage />} />
+          <Route path="/membership-validation" element={<ValidationFormPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

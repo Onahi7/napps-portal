@@ -13,6 +13,8 @@ import { Card } from '@/components/ui/card';
 import { CameraCapture } from '@/components/ui/camera-capture';
 import { NASARAWA_LGAS, NasarawaLga } from '@/lib/nasarawaLgas';
 import { NAPPS_CHAPTERS } from '@/constants/napps-chapters';
+import { Sparkles } from 'lucide-react';
+import { AiDocumentScannerModal } from './AiDocumentScannerModal';
 
 const step1Schema = z.object({
   firstName: z.string().min(2, 'First name is required'),
@@ -27,7 +29,7 @@ const step1Schema = z.object({
   sex: z.enum(['Male', 'Female'], { required_error: 'Please select your gender' }),
   email: z.string().email('Invalid email address'),
   phone: z.string().min(10, 'Phone number is required'),
-  chapters: z.array(z.enum(NAPPS_CHAPTERS)).min(1, 'Please select a chapter'),
+  chapters: z.array(z.string()).optional().default([]),
   passportPhoto: z.string().optional(),
   nappsRegistered: z.enum(['Not Registered', 'Registered', 'Registered with Certificate']).optional(),
   participationHistory: z.union([z.string(), z.array(z.string())]).optional(),
@@ -75,6 +77,22 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
   const [participation, setParticipation] = useState<Record<string, boolean>>(
     parseParticipationHistory(initialData?.participationHistory as string | string[] | undefined)
   );
+
+  const [aiScannerOpen, setAiScannerOpen] = useState(false);
+
+  const handleApplyAiData = (extracted: any) => {
+    if (extracted.firstName) setValue('firstName', extracted.firstName);
+    if (extracted.middleName) setValue('middleName', extracted.middleName);
+    if (extracted.lastName) setValue('lastName', extracted.lastName);
+    if (extracted.email) setValue('email', extracted.email);
+    if (extracted.phone) setValue('phone', extracted.phone);
+    if (extracted.lga && NASARAWA_LGAS.includes(extracted.lga as NasarawaLga)) {
+      setValue('lga', extracted.lga as NasarawaLga);
+    }
+    if (extracted.nappsRegistered) {
+      setValue('nappsRegistered', extracted.nappsRegistered);
+    }
+  };
 
   const {
     register,
@@ -132,6 +150,36 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 px-1">
+      {/* AI Fast-Track Document Capture Banner */}
+      <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 border border-emerald-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm shrink-0">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              AI Smart Document Scanner &amp; Auto-Fill
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">New Feature</span>
+            </h4>
+            <p className="text-xs text-slate-600">Scan your membership slip or approval letter to auto-populate your details in seconds.</p>
+          </div>
+        </div>
+        <Button 
+          type="button" 
+          onClick={() => setAiScannerOpen(true)}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm whitespace-nowrap"
+        >
+          <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+          Scan Document
+        </Button>
+      </div>
+
+      <AiDocumentScannerModal
+        open={aiScannerOpen}
+        onOpenChange={setAiScannerOpen}
+        onApplyData={handleApplyAiData}
+      />
+
       {/* Basic Personal Information */}
       <div className="space-y-4">
         <h3 className="text-base sm:text-lg font-semibold text-gray-900">Basic Information</h3>
@@ -315,12 +363,14 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
       {/* Chapters Assignment */}
       <div className="space-y-4 pt-6 border-t">
         <div>
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900">NAPPS Chapter *</h3>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Select the NAPPS chapter you belong to</p>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">NAPPS Chapter</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            Select the NAPPS chapter you belong to. If unsure, select &quot;General / Unassigned&quot;.
+          </p>
         </div>
 
         <div className="space-y-3">
-          <Label className="text-sm font-medium">Available Chapters</Label>
+          <Label className="text-sm font-medium">Assigned Chapter</Label>
           <Controller
             name="chapters"
             control={control}
@@ -331,9 +381,10 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
                 disabled={isSubmitting}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select chapter" />
+                  <SelectValue placeholder="Select chapter (or General / Unassigned)" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="General / Unassigned">General / Unassigned (Can be set later)</SelectItem>
                   {NAPPS_CHAPTERS.map((chapter) => (
                     <SelectItem key={chapter} value={chapter}>
                       {chapter}
@@ -347,7 +398,7 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
             <p className="text-xs text-red-500 mt-1">{errors.chapters.message}</p>
           )}
           <p className="text-xs text-muted-foreground">
-            Select one chapter. This can be updated later by an administrator.
+            Your LGA and Zonal executives can also update your chapter affiliation anytime.
           </p>
         </div>
       </div>
@@ -355,12 +406,12 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
       {/* NAPPS Participation */}
       <div className="space-y-4 pt-6 border-t">
         <div>
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900">NAPPS Participation</h3>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Optional: Tell us about your NAPPS involvement</p>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">NAPPS Membership &amp; Activities</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Optional: Tell us about your prior NAPPS involvement</p>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="nappsRegistered" className="text-sm font-medium">NAPPS Registration Status</Label>
+          <Label htmlFor="nappsRegistered" className="text-sm font-medium">Prior Registration Status</Label>
           <Select
             onValueChange={(value) => setValue('nappsRegistered', value as 'Not Registered' | 'Registered' | 'Registered with Certificate')}
             defaultValue={initialData?.nappsRegistered || 'Not Registered'}
@@ -369,47 +420,59 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
               <SelectValue placeholder="Select registration status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Not Registered">Not Registered</SelectItem>
-              <SelectItem value="Registered">Registered</SelectItem>
+              <SelectItem value="Not Registered">Not Registered / First-Time Applicant</SelectItem>
+              <SelectItem value="Registered">Previously Registered with NAPPS</SelectItem>
               <SelectItem value="Registered with Certificate">Registered with Certificate</SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground mt-1">Select your current NAPPS registration status</p>
+          <p className="text-xs text-muted-foreground mt-1">Select your existing status with the association</p>
         </div>
 
         {nappsRegistered !== 'Not Registered' && (
-          <div className="space-y-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-xs sm:text-sm text-blue-700 font-medium">📋 Additional Information Required</p>
+          <div className="space-y-5 p-4 sm:p-5 bg-slate-50/80 rounded-xl border border-slate-200">
+            <div className="flex items-center justify-between">
+              <p className="text-xs sm:text-sm text-emerald-800 font-semibold flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                Prior Examination &amp; Event Participation (Optional)
+              </p>
+            </div>
             
-            <div className="space-y-1.5">
-              <Label htmlFor="participationHistory" className="text-sm font-medium">Participation History</Label>
-              <Card className="p-4">
-                <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs sm:text-sm font-medium text-slate-700">Participation by Level &amp; Academic Session</Label>
+              <Card className="p-4 bg-white border-slate-200">
+                <div className="space-y-4 divide-y divide-slate-100">
                   {['National', 'State', 'Zonal'].map((level) => (
-                    <div key={level}>
-                      <h5 className="font-medium mb-2 text-sm">{level} Level</h5>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div key={level} className="pt-3 first:pt-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-xs text-slate-800 uppercase tracking-wider">{level} Level</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         {['2022/2023', '2023/2024', '2024/2025', '2025/2026'].map((year) => {
                           const key = `${level}-${year}`;
+                          const isChecked = participation[key] || false;
                           return (
-                            <div key={key} className="flex items-center space-x-2">
+                            <label
+                              key={key}
+                              htmlFor={key}
+                              className={`flex items-center gap-2 p-2 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+                                isChecked
+                                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-sm'
+                                  : 'bg-slate-50/60 border-slate-200 text-slate-600 hover:bg-slate-100/70'
+                              }`}
+                            >
                               <Checkbox
                                 id={key}
-                                checked={participation[key] || false}
+                                checked={isChecked}
                                 onCheckedChange={(checked) => {
                                   setParticipation(prev => ({
                                     ...prev,
                                     [key]: checked === true
                                   }));
                                 }}
+                                className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                               />
-                              <label
-                                htmlFor={key}
-                                className="text-xs sm:text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                              >
-                                {year}
-                              </label>
-                            </div>
+                              <span className="select-none">{year}</span>
+                            </label>
                           );
                         })}
                       </div>
@@ -418,59 +481,56 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
                 </div>
               </Card>
               <p className="text-xs text-muted-foreground mt-1">
-                Select the academic years and levels where your school participated in NAPPS examinations
+                Tick the sessions your pupils sat for unified exams or state/zonal events.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="timesParticipated" className="text-sm font-medium">Times Participated in NAPPS Exam</Label>
+                <Label htmlFor="timesParticipated" className="text-xs sm:text-sm font-medium">Times Participated in NAPPS Exam</Label>
                 <Input
                   id="timesParticipated"
                   type="number"
                   {...register('timesParticipated', { valueAsNumber: true })}
                   min="0"
-                  placeholder="0"
-                  className="w-full"
+                  placeholder="e.g. 3"
+                  className="w-full bg-white"
                 />
-                <p className="text-xs text-muted-foreground">Total number of times</p>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="pupilsPresentedLastExam" className="text-sm font-medium">Pupils Presented (Last Exam)</Label>
+                <Label htmlFor="pupilsPresentedLastExam" className="text-xs sm:text-sm font-medium">Pupils Presented (Last Exam)</Label>
                 <Input
                   id="pupilsPresentedLastExam"
                   type="number"
                   {...register('pupilsPresentedLastExam', { valueAsNumber: true })}
                   min="0"
-                  placeholder="0"
-                  className="w-full"
+                  placeholder="e.g. 45"
+                  className="w-full bg-white"
                 />
-                <p className="text-xs text-muted-foreground">Number of pupils in last exam</p>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="awards" className="text-sm font-medium">Awards from NAPPS</Label>
-              <Textarea
-                id="awards"
-                {...register('awards')}
-                placeholder="List any awards or recognitions received from NAPPS"
-                rows={3}
-                className="text-sm"
-              />
-              <p className="text-xs text-muted-foreground">Include year and award name</p>
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="positionHeld" className="text-xs sm:text-sm font-medium">Position Held in NAPPS (if any)</Label>
+                <Input
+                  id="positionHeld"
+                  {...register('positionHeld')}
+                  placeholder="e.g., LGA Secretary, Member"
+                  className="w-full bg-white"
+                />
+              </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="positionHeld" className="text-sm font-medium">Position Held at NAPPS</Label>
-              <Input
-                id="positionHeld"
-                {...register('positionHeld')}
-                placeholder="E.g., Zonal Chairman, State Secretary"
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground">Current or previous position</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="awards" className="text-xs sm:text-sm font-medium">Awards / Recognitions (if any)</Label>
+                <Input
+                  id="awards"
+                  {...register('awards')}
+                  placeholder="e.g. 2024 Best STEM School Award"
+                  className="w-full bg-white"
+                />
+              </div>
             </div>
           </div>
         )}

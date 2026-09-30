@@ -15,6 +15,7 @@ import {
   Step2SchoolInfo, 
   Step3PaymentInfo 
 } from "@/components/registration";
+import { FidelityVirtualAccountModal, FidelityVirtualAccountData } from "@/components/payment/FidelityVirtualAccountModal";
 
 interface RegistrationData {
   personalInfo?: any;
@@ -22,7 +23,7 @@ interface RegistrationData {
   paymentInfo?: any;
   submissionId?: string;
   paymentPending?: boolean;
-  paymentMethod?: 'online' | 'bank_transfer';
+  paymentMethod?: 'online' | 'bank_transfer' | 'fidelity';
   registrationNumber?: string;
   timestamp?: number;
 }
@@ -37,8 +38,10 @@ export default function Register() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [resumeId, setResumeId] = useState("");
+  const [showFidelityModal, setShowFidelityModal] = useState(false);
+  const [fidelityVirtualAccount, setFidelityVirtualAccount] = useState<FidelityVirtualAccountData | null>(null);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
 
   // Load saved progress on mount
   useEffect(() => {
@@ -70,9 +73,9 @@ export default function Register() {
             },
           });
           
-          setShowResumeDialog(true);
+          // setShowResumeDialog(true);
         } else if (parsed.submissionId) {
-          setShowResumeDialog(true);
+          // Auto-resume dialog disabled on mount - subtle banner shown instead
         }
       } catch (error) {
         console.error('Failed to load saved progress:', error);
@@ -295,7 +298,42 @@ export default function Register() {
     try {
       const { paymentMethod } = data;
 
-      if (paymentMethod === 'online') {
+      if (paymentMethod === 'fidelity') {
+        // Handle Fidelity dynamic virtual account transfer
+        const response = await fetch(`${API_BASE_URL}/proprietors/registration/step3`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentMethod: 'fidelity',
+            submissionId: registrationData.submissionId,
+            finalSubmit: false
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to initialize Fidelity virtual account');
+        }
+
+        const result = await response.json();
+
+        const updatedData = {
+          ...registrationData,
+          paymentInfo: data,
+          paymentPending: true,
+          paymentMethod: 'fidelity' as const
+        };
+        
+        saveProgress(updatedData);
+        savePaymentPending('online', registrationData.submissionId!);
+
+        if (result.virtualAccount) {
+          setFidelityVirtualAccount(result.virtualAccount);
+          setShowFidelityModal(true);
+        } else {
+          throw new Error('No virtual account returned from Fidelity gateway');
+        }
+      } else if (paymentMethod === 'online') {
         // Handle online payment - initiate Paystack payment
         const response = await fetch(`${API_BASE_URL}/proprietors/registration/step3`, {
           method: 'POST',
@@ -306,6 +344,7 @@ export default function Register() {
             finalSubmit: false // Don't finalize yet, waiting for payment
           }),
         });
+
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -391,7 +430,17 @@ export default function Register() {
     }
   };
 
+  const handleFidelityPaymentSuccess = () => {
+    setShowFidelityModal(false);
+    clearProgress();
+    toast.success('Registration & Payment Confirmed!', {
+      description: 'Your payment via Fidelity Bank has been verified. Welcome to NAPPS Nasarawa!',
+    });
+    navigate(`/payment/status?submissionId=${registrationData.submissionId}`);
+  };
+
   const handleBack = () => {
+
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
@@ -482,14 +531,49 @@ export default function Register() {
               </Card>
             )}
 
+            {registrationData.submissionId && !showResumeDialog && (
+              <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+                <div className="flex items-center gap-2.5 text-emerald-950 font-medium">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Saved registration found for Submission ID: <code className="font-mono text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">{registrationData.submissionId}</code></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setResumeId(registrationData.submissionId!);
+                      handleResumeRegistration();
+                    }}
+                    disabled={isSubmitting}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs font-semibold"
+                  >
+                    Resume Progress
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      clearProgress();
+                      setRegistrationData({});
+                      setCurrentStep(1);
+                      toast.info('Started fresh registration session');
+                    }}
+                    className="h-8 text-xs text-slate-600 hover:text-slate-900"
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {!showResumeDialog && (
-              <div className="flex justify-end">
+              <div className="flex justify-end mb-2">
                 <Button
                   variant="link"
                   onClick={() => setShowResumeDialog(true)}
-                  className="text-xs sm:text-sm"
+                  className="text-xs sm:text-sm text-slate-600 hover:text-emerald-700"
                 >
-                  Already started? Resume Registration
+                  Already started? Resume with Submission ID →
                 </Button>
               </div>
             )}
@@ -602,6 +686,16 @@ export default function Register() {
           </div>
         </div>
       </div>
+
+      {/* Fidelity Dynamic Virtual Account Modal */}
+      <FidelityVirtualAccountModal
+        isOpen={showFidelityModal}
+        onClose={() => setShowFidelityModal(false)}
+        onSuccess={handleFidelityPaymentSuccess}
+        virtualAccount={fidelityVirtualAccount}
+        purposeTitle="School Registration & Annual Dues"
+      />
     </Layout>
   );
 }
+
