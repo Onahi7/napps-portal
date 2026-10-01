@@ -6,25 +6,26 @@ import {
   Settings, 
   FileText, 
   BarChart3, 
-  Bell,
-  School,
+  School, 
+  DollarSign, 
+  BookOpen, 
+  Building2,
+  GraduationCap,
   ExternalLink,
-  DollarSign,
-  BookOpen,
-  Building2
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import nappsLogo from '@/assets/napps-logo.png';
 
 interface SidebarProps {
   currentPage: string;
-  onNavigate: (page: 'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'chapters' | 'levy-payments' | 'import' | 'settings') => void;
+  onNavigate: (page: 'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'chapters' | 'levy-payments' | 'import' | 'settings' | 'nnsuce' | 'monitoring') => void;
 }
 
-const navigationItems = [
+const navigationSections = [
   {
-    title: 'Overview',
+    title: 'Core Administration',
     items: [
       { 
         name: 'Dashboard', 
@@ -33,44 +34,44 @@ const navigationItems = [
         badge: null
       },
       { 
-        name: 'Analytics', 
-        icon: BarChart3, 
-        page: 'analytics' as const,
-        badge: null
-      },
-    ]
-  },
-  {
-    title: 'Management',
-    items: [
-      { 
-        name: 'Proprietors', 
+        name: 'Proprietors & Schools', 
         icon: Users, 
         page: 'proprietors' as const,
         badge: null
       },
       { 
-        name: 'Schools', 
-        icon: School, 
-        page: 'schools' as const,
-        badge: null
-      },
-      { 
-        name: 'Chapters', 
+        name: 'Chapters (13 LGAs)', 
         icon: BookOpen, 
         page: 'chapters' as const,
-        badge: null
+        badge: '13'
       },
     ]
   },
   {
-    title: 'Data',
+    title: 'Exams & Governance',
     items: [
       { 
-        name: 'Payments', 
+        name: 'NNSUCE Exams & OMR', 
+        icon: GraduationCap, 
+        page: 'nnsuce' as const,
+        badge: 'NEW'
+      },
+      { 
+        name: '4-Tier Dues Ledger', 
+        icon: BarChart3, 
+        page: 'monitoring' as const,
+        badge: '20/35/20/25'
+      },
+    ]
+  },
+  {
+    title: 'Revenue & Finance',
+    items: [
+      { 
+        name: 'Payment Transactions', 
         icon: CreditCard, 
         page: 'payments' as const,
-        badge: null
+        badge: 'Fidelity'
       },
       { 
         name: 'Levy Payments', 
@@ -79,36 +80,24 @@ const navigationItems = [
         badge: null
       },
       { 
-        name: 'Fees', 
+        name: 'Fee Schedule', 
         icon: DollarSign, 
         page: 'fees' as const,
         badge: null
       },
       { 
-        name: 'Import Data', 
+        name: 'Import Legacy Data', 
         icon: Upload, 
         page: 'import' as const,
-        badge: null
-      },
-      { 
-        name: 'Reports', 
-        icon: FileText, 
-        page: 'reports' as const,
         badge: null
       },
     ]
   },
   {
-    title: 'System',
+    title: 'System & Security',
     items: [
       { 
-        name: 'Notifications', 
-        icon: Bell, 
-        page: 'notifications' as const,
-        badge: '3'
-      },
-      { 
-        name: 'Settings', 
+        name: 'System Settings', 
         icon: Settings, 
         page: 'settings' as const,
         badge: null
@@ -118,90 +107,78 @@ const navigationItems = [
 ];
 
 export function AdminSidebar({ currentPage, onNavigate }: SidebarProps) {
-  const handleItemClick = (page: string) => {
-    // Only navigate for implemented pages
-    const validPages = ['dashboard', 'proprietors', 'payments', 'fees', 'chapters', 'levy-payments', 'import', 'settings'] as const;
-    type ValidPage = typeof validPages[number];
-    
-    if (validPages.includes(page as ValidPage)) {
-      onNavigate(page as 'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'chapters' | 'levy-payments' | 'import' | 'settings');
-    }
-  };
-
   return (
-    <div className="h-screen w-64 bg-white border-r border-gray-200 fixed left-0 top-0 flex flex-col">
-      {/* Logo/Brand */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">NP</span>
-          </div>
+    <aside className="h-screen w-64 bg-slate-900 text-slate-300 border-r border-slate-800 fixed left-0 top-0 flex flex-col z-30 font-sans shadow-lg">
+      {/* Official Header Crest */}
+      <div className="p-5 border-b border-slate-800/80 bg-slate-950/60">
+        <div className="flex items-center gap-3">
+          <img 
+            src={nappsLogo} 
+            alt="NAPPS Logo" 
+            className="w-10 h-10 rounded-full ring-2 ring-emerald-500/30 object-contain bg-white/10"
+          />
           <div>
-            <h2 className="font-bold text-gray-900">NAPPS Admin</h2>
-            <p className="text-xs text-gray-500">Nasarawa Portal</p>
+            <h2 className="font-bold text-white text-sm tracking-tight flex items-center gap-1.5">
+              <span>NAPPS Executive</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+            </h2>
+            <p className="text-[11px] text-emerald-400 font-medium">Nasarawa State Chapter</p>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-6">
-          {navigationItems.map((section, sectionIndex) => (
-            <div key={sectionIndex}>
-              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                {section.title}
-              </h3>
-              <div className="space-y-1">
-                {section.items.map((item, itemIndex) => {
-                  const isActive = currentPage === item.page;
-                  const Icon = item.icon;
-                  
-                  return (
-                    <button
-                      key={itemIndex}
-                      onClick={() => handleItemClick(item.page)}
-                      className={cn(
-                        "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-primary text-white"
-                          : "text-gray-700 hover:bg-gray-100"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="w-4 h-4" />
-                        <span>{item.name}</span>
-                      </div>
-                      {item.badge && (
-                        <Badge 
-                          variant={isActive ? "secondary" : "outline"}
-                          className={cn(
-                            "text-xs",
-                            isActive && "bg-white/20 text-white border-white/30"
-                          )}
-                        >
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* Navigation Sections */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        {navigationSections.map((section, idx) => (
+          <div key={idx} className="space-y-1">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+              {section.title}
+            </p>
+            {section.items.map((item) => {
+              const active = currentPage === item.page;
+              return (
+                <button
+                  key={item.page}
+                  type="button"
+                  onClick={() => onNavigate(item.page)}
+                  className={cn(
+                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all text-left group",
+                    active
+                      ? "bg-emerald-600/90 text-white shadow-sm"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  )}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <item.icon className={cn("w-4 h-4", active ? "text-white" : "text-slate-400 group-hover:text-emerald-400")} />
+                    <span>{item.name}</span>
+                  </div>
+                  {item.badge && (
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase",
+                      active ? "bg-white text-emerald-950" : "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                    )}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
-      {/* Quick Action */}
-      <div className="p-4 border-t border-gray-200">
-        <Button 
-          variant="outline" 
-          className="w-full justify-start text-sm"
-          onClick={() => window.open('/', '_blank')}
+      {/* Bottom Public Link */}
+      <div className="p-3 border-t border-slate-800/80 bg-slate-950/40">
+        <a 
+          href="/" 
+          target="_blank" 
+          rel="noreferrer"
+          className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
         >
-          <ExternalLink className="w-4 h-4 mr-2" />
-          View Portal Site
-        </Button>
+          <span>View Public Portal</span>
+          <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+        </a>
       </div>
-    </div>
+    </aside>
   );
 }

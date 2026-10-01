@@ -323,19 +323,19 @@ export const RecordLookup = () => {
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="text-xs font-semibold text-slate-500 uppercase mr-1">Search By:</span>
               {[
-                { id: 'all', label: '🌟 Smart All-in-One' },
-                { id: 'school', label: '🏫 School Name' },
-                { id: 'phone', label: '📱 Phone Number' },
-                { id: 'name', label: '👤 Proprietor Name' },
-                { id: 'regNo', label: '🆔 NAPPS Reg ID' },
+                { id: 'all', label: 'All Fields' },
+                { id: 'school', label: 'School Name' },
+                { id: 'phone', label: 'Phone Number' },
+                { id: 'name', label: 'Proprietor Name' },
+                { id: 'regNo', label: 'NAPPS Reg ID' },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setSearchMode(tab.id as SearchMode)}
-                  className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all ${
+                  className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all ${
                     searchMode === tab.id
-                      ? 'bg-emerald-600 text-white shadow-sm'
+                      ? 'bg-[#064e3b] text-white shadow-xs font-semibold'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >

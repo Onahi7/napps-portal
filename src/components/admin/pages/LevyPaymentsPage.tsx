@@ -41,8 +41,12 @@ import {
   ChevronsRight,
   RefreshCw,
   Building2,
-  Users
+  Users,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
+import { generateLevyReceipt } from '@/utils/receiptGenerator';
+import { exportToCSV, exportTableToPDF } from '@/lib/export-utils';
 
 interface LevyPayment {
   _id: string;
@@ -310,6 +314,59 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
     }
   };
 
+  const handleExportPDF = () => {
+    try {
+      const dataToExport = filteredPayments.length > 0 ? filteredPayments : payments;
+      if (!dataToExport || dataToExport.length === 0) {
+        toast.error("No levy records to export");
+        return;
+      }
+      exportTableToPDF({
+        title: 'NAPPS Nasarawa State Chapter - Levy Payments Registry',
+        subtitle: `Chapter: ${chapterFilter} | Status: ${statusFilter.toUpperCase()} | Total Records: ${dataToExport.length}`,
+        headers: ['S/N', 'Receipt #', 'Member Name', 'School Name', 'Chapter', 'Amount (NGN)', 'Status', 'Date'],
+        rows: dataToExport.map((p, idx) => [
+          idx + 1,
+          p.receiptNumber || 'N/A',
+          p.memberName || 'N/A',
+          p.schoolName || 'N/A',
+          p.chapter || 'Nasarawa',
+          `₦${((p.amount || 0) / 100).toLocaleString()}`,
+          (p.status || 'pending').toUpperCase(),
+          p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-NG') : new Date(p.createdAt).toLocaleDateString('en-NG'),
+        ]),
+        filename: 'NAPPS_Levy_Payments_Report',
+        orientation: 'landscape'
+      });
+      toast.success("Executive PDF report generated");
+    } catch (err: any) {
+      toast.error(err.message || "PDF generation failed");
+    }
+  };
+
+  const handleDownloadReceipt = async (payment: LevyPayment) => {
+    try {
+      toast.info('Generating official receipt...');
+      await generateLevyReceipt({
+        receiptNumber: payment.receiptNumber || 'NAPPS-RCPT-001',
+        reference: payment.reference || 'REF-NAPPS',
+        memberName: payment.memberName,
+        email: payment.email,
+        phone: payment.phone,
+        chapter: payment.chapter || 'Nasarawa',
+        schoolName: payment.schoolName,
+        wards: payment.wards || [],
+        amount: payment.amount,
+        paidAt: payment.paidAt || payment.createdAt || new Date().toISOString(),
+        paymentMethod: payment.paymentMethod || 'Online',
+      });
+      toast.success('Receipt downloaded successfully');
+    } catch (err: any) {
+      console.error('Receipt download error:', err);
+      toast.error('Failed to generate receipt');
+    }
+  };
+
   const filteredPayments = payments.filter((payment) => {
     const matchesSearch = searchTerm === '' || 
       payment.memberName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -385,22 +442,26 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button 
-            onClick={handleExportPayments} 
-            disabled={loading || exporting}
-          >
-            {exporting ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4 mr-2" />
-                Export Report
-              </>
-            )}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button disabled={loading || exporting} className="gap-2 font-semibold bg-[#064e3b] hover:bg-[#047857] text-white">
+                <Download className="w-4 h-4 text-amber-400" />
+                {exporting ? 'Exporting...' : 'Export Levy Data'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPayments} className="cursor-pointer">
+                <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-600" />
+                Export to Excel (CSV)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
+                <FileText className="w-4 h-4 mr-2 text-red-600" />
+                Export Executive PDF Report
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -564,7 +625,10 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Download Receipt</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDownloadReceipt(payment)} className="cursor-pointer">
+                              <Download className="w-3.5 h-3.5 mr-2 text-emerald-600" />
+                              Download Receipt
+                            </DropdownMenuItem>
                             <DropdownMenuItem>Resend Receipt Email</DropdownMenuItem>
                             {payment.status === 'pending' && (
                               <DropdownMenuItem>Verify Payment</DropdownMenuItem>

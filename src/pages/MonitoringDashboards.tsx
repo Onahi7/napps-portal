@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -60,9 +59,8 @@ export default function MonitoringDashboards() {
   const lgaDetail = financialData?.lgaBreakdown?.find((item: any) => item.lga === selectedLga) || financialData?.lgaBreakdown?.[0];
 
   return (
-    <Layout>
-      <div className="bg-slate-50 min-h-screen py-10 pb-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="space-y-6 pb-12">
+      <div className="space-y-8">
           {/* Header */}
           <div className="rounded-2xl p-6 sm:p-8 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 border border-emerald-500/30">
             <div className="space-y-2 max-w-2xl">
@@ -312,6 +310,5 @@ export default function MonitoringDashboards() {
           </Tabs>
         </div>
       </div>
-    </Layout>
   );
 }

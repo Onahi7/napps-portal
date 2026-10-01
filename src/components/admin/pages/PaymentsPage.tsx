@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { exportToCSV, exportTableToPDF } from '@/lib/export-utils';
 import {
   DollarSign,
   CreditCard,
@@ -40,7 +41,9 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  RefreshCw
+  RefreshCw,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
 import { NAPPS_CHAPTERS } from '@/constants/napps-chapters';
 
@@ -361,6 +364,36 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
     }
   };
 
+  const handleExportPDF = () => {
+    try {
+      const dataToExport = filteredPayments.length > 0 ? filteredPayments : payments;
+      if (!dataToExport || dataToExport.length === 0) {
+        toast.error("No transactions to export");
+        return;
+      }
+      exportTableToPDF({
+        title: 'NAPPS Nasarawa State Payments & Revenue Ledger',
+        subtitle: `Status: ${statusFilter.toUpperCase()} | Chapter: ${chapterFilter} | Records: ${dataToExport.length}`,
+        headers: ['S/N', 'Reference', 'Proprietor', 'School', 'Amount (NGN)', 'Method', 'Status', 'Date'],
+        rows: dataToExport.map((p, idx) => [
+          idx + 1,
+          p.reference || 'N/A',
+          `${p.proprietorId?.firstName || ''} ${p.proprietorId?.lastName || ''}`.trim() || 'N/A',
+          p.schoolId?.schoolName || (p as any).schoolName || 'N/A',
+          `₦${(typeof p.amount === 'number' ? (p.amount > 100000 ? p.amount / 100 : p.amount) : 0).toLocaleString()}`,
+          p.paymentMethod === 'fidelity' ? 'Fidelity Bank' : (p.reference?.startsWith('SIM_') ? 'Simulated' : 'Paystack'),
+          (p.status || 'pending').toUpperCase(),
+          p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-NG') : new Date(p.createdAt).toLocaleDateString('en-NG'),
+        ]),
+        filename: 'NAPPS_Payment_Transactions_Report',
+        orientation: 'landscape'
+      });
+      toast.success("Executive PDF report generated successfully");
+    } catch (err: any) {
+      toast.error(err.message || "PDF generation failed");
+    }
+  };
+
   // Client-side search filtering for immediate feedback
   const filteredPayments = payments.filter((payment) => {
     // Search filter
@@ -455,22 +488,26 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button 
-            onClick={handleExportPayments} 
-            disabled={loading || exporting}
-          >
-            {exporting ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4 mr-2" />
-                Export Report
-              </>
-            )}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button disabled={loading || exporting} className="gap-2 font-semibold bg-[#064e3b] hover:bg-[#047857] text-white">
+                <Download className="w-4 h-4 text-amber-400" />
+                {exporting ? 'Exporting...' : 'Export Ledger'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Export Ledger Data</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPayments} className="cursor-pointer">
+                <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-600" />
+                Export to Excel (CSV)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
+                <FileText className="w-4 h-4 mr-2 text-red-600" />
+                Export Executive PDF Report
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

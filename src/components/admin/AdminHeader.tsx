@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Search, User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { Bell, Search, User, LogOut, Settings, ChevronDown, CheckCircle2, Shield, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,7 +24,6 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ onLogout, user }: AdminHeaderProps) {
-  const [notifications] = useState(3);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -33,32 +32,33 @@ export function AdminHeader({ onLogout, user }: AdminHeaderProps) {
   }, []);
 
   const initials = user 
-    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase()
+    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'AD'
     : 'AD';
 
   const displayName = user 
-    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Admin'
-    : 'Admin';
+    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'State Administrator'
+    : 'State Administrator';
 
   return (
-    <div className="h-16 px-6 flex items-center justify-between">
-      {/* Left Section - Search */}
-      <div className="flex-1 max-w-xl">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            type="search"
-            placeholder="Search proprietors, schools, or payments..."
-            className="pl-10 bg-gray-50 border-gray-200"
-          />
+    <header className="h-16 px-6 bg-white border-b border-slate-200/90 flex items-center justify-between sticky top-0 z-20 shadow-xs">
+      {/* Left Section - Context Title & Live Indicator */}
+      <div className="flex items-center gap-3">
+        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-900">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>NAPPS Nasarawa State Cloud</span>
+        </div>
+        <div className="hidden md:flex items-center gap-1.5 text-xs text-slate-500">
+          <span>Session: 2025/2026</span>
+          <span className="text-slate-300">&bull;</span>
+          <span>13 LGAs Live</span>
         </div>
       </div>
 
       {/* Right Section */}
       <div className="flex items-center gap-4">
-        {/* Current Time */}
-        <div className="hidden md:block text-sm text-gray-600">
-          {currentTime.toLocaleDateString('en-US', {
+        {/* Current Time (Nasarawa Local Time) */}
+        <div className="hidden lg:block text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/60">
+          {currentTime.toLocaleDateString('en-GB', {
             weekday: 'short',
             month: 'short',
             day: 'numeric',
@@ -66,94 +66,67 @@ export function AdminHeader({ onLogout, user }: AdminHeaderProps) {
           })}
         </div>
 
-        {/* Notifications */}
+        {/* System Health Status Popover */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              {notifications > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                >
-                  {notifications}
-                </Badge>
-              )}
+            <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900">
+              <Activity className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">System Status</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-72 p-3 text-xs space-y-2">
+            <DropdownMenuLabel className="p-0 font-bold text-slate-900">Live Service Telemetry</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <div className="space-y-2 p-2">
-              <div className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
-                <p className="text-sm font-medium">New Registration</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  John Doe submitted a new registration
-                </p>
-                <p className="text-xs text-gray-400 mt-1">2 minutes ago</p>
-              </div>
-              <div className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
-                <p className="text-sm font-medium">Payment Received</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  ₦25,000 payment from Fatima Hassan
-                </p>
-                <p className="text-xs text-gray-400 mt-1">1 hour ago</p>
-              </div>
-              <div className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
-                <p className="text-sm font-medium">Pending Verification</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  5 bank transfers awaiting verification
-                </p>
-                <p className="text-xs text-gray-400 mt-1">3 hours ago</p>
-              </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-slate-600">Database Engine</span>
+              <span className="flex items-center gap-1 font-semibold text-emerald-700">
+                <CheckCircle2 className="w-3.5 h-3.5" /> MongoDB Atlas
+              </span>
             </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-center justify-center text-sm text-primary">
-              View All Notifications
-            </DropdownMenuItem>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-slate-600">Payment Gateway</span>
+              <span className="flex items-center gap-1 font-semibold text-emerald-700">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Fidelity Virtuda
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-slate-600">Dues Split Engine</span>
+              <span className="font-semibold text-slate-900">4-Tier Automated</span>
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
 
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-3 pl-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-white text-sm">
+            <Button variant="ghost" className="flex items-center gap-2.5 pl-2 h-9">
+              <Avatar className="h-7 w-7 ring-1 ring-emerald-600/30">
+                <AvatarFallback className="bg-[#064e3b] text-white text-xs font-bold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium">{displayName}</p>
-                <p className="text-xs text-gray-500">{user?.role || 'Administrator'}</p>
+              <div className="hidden sm:block text-left leading-tight">
+                <p className="text-xs font-bold text-slate-900 truncate max-w-[140px]">{displayName}</p>
+                <p className="text-[10px] text-emerald-700 font-medium">{user?.role || 'Executive Admin'}</p>
               </div>
-              <ChevronDown className="w-4 h-4 text-gray-400" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div>
-                <p className="font-medium">{displayName}</p>
-                <p className="text-xs text-gray-500 font-normal">{user?.email}</p>
+                <p className="font-bold text-slate-900 text-xs">{displayName}</p>
+                <p className="text-[11px] text-slate-500 font-normal truncate">{user?.email || 'admin@nappsnasarawa.com'}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="w-4 h-4 mr-2" />
-              My Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onLogout} className="text-red-600">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
+            <DropdownMenuItem onClick={onLogout} className="text-red-600 font-medium cursor-pointer text-xs">
+              <LogOut className="w-3.5 h-3.5 mr-2" />
+              Sign Out Securely
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>
+    </header>
   );
 }

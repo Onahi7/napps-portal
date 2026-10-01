@@ -34,6 +34,9 @@ const step2Schema = z.object({
   ownership: z.enum(['Individual(s)', 'Sole', 'Partnership', 'Corporate', 'Community', 'Religious Organization', 'Other']).optional(),
   yearOfEstablishment: z.number().min(1900).max(2100).optional(),
   yearOfApproval: z.number().min(1900).max(2100).optional(),
+  cacNumber: z.string().optional(),
+  nnsuceTimesWritten: z.string().optional(),
+  nnsucePupilsCount: z.number().min(0, 'Cannot be negative').optional(),
   registrationEvidence: z.string().optional(),
   registrationEvidencePhoto: z.string().optional(),
   totalEnrollment: z.number().min(0, 'Cannot be negative').optional(),
@@ -95,6 +98,7 @@ export const Step2SchoolInfo: React.FC<Step2SchoolInfoProps> = ({
   const lgaValue = watch('lga');
   const typeOfSchoolValue = watch('typeOfSchool');
   const ownershipValue = watch('ownership');
+  const nnsuceTimesWrittenValue = watch('nnsuceTimesWritten');
 
   type EnrollmentFieldKey = Extract<keyof Step2FormData, `${string}Male` | `${string}Female`>;
 
@@ -154,11 +158,17 @@ export const Step2SchoolInfo: React.FC<Step2SchoolInfoProps> = ({
     if (data.lga && NASARAWA_LGAS.includes(data.lga as NasarawaLga)) {
       setValue('lga', data.lga as NasarawaLga, { shouldValidate: true });
     }
+    if (data.cacNumber) setValue('cacNumber', data.cacNumber);
     if (data.yearOfEstablishment) setValue('yearOfEstablishment', Number(data.yearOfEstablishment));
+    if (data.yearOfApproval) setValue('yearOfApproval', Number(data.yearOfApproval));
     if (data.typeOfSchool) setValue('typeOfSchool', data.typeOfSchool as any);
     if (data.categoryOfSchool) setValue('categoryOfSchool', data.categoryOfSchool);
     if (data.ownership) setValue('ownership', data.ownership as any);
     if (data.totalEnrollment) setValue('totalEnrollment', Number(data.totalEnrollment));
+    if (data.nnsuceTimesWritten) setValue('nnsuceTimesWritten', String(data.nnsuceTimesWritten));
+    if (data.nnsuce2025PupilsCount || data.nnsucePupilsCount) {
+      setValue('nnsucePupilsCount', Number(data.nnsuce2025PupilsCount || data.nnsucePupilsCount));
+    }
     toast.success("School details auto-filled from scanned document!");
   };
 
@@ -364,6 +374,49 @@ export const Step2SchoolInfo: React.FC<Step2SchoolInfoProps> = ({
               type="number"
               {...register('yearOfApproval', { valueAsNumber: true })}
               placeholder="e.g. 2015"
+              className="h-11"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="cacNumber" className="text-sm font-medium">
+              CAC Registration / RC Number <span className="text-slate-400 text-xs">(optional)</span>
+            </Label>
+            <Input
+              id="cacNumber"
+              {...register('cacNumber')}
+              placeholder="e.g. RC 145920 or BN 284910"
+              className="h-11"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Previous NNSUCE Participation</Label>
+            <Select
+              onValueChange={(value) => setValue('nnsuceTimesWritten', value)}
+              value={nnsuceTimesWrittenValue ?? 'Never'}
+            >
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select participation history" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Never">Never (First Time)</SelectItem>
+                <SelectItem value="1 time">1 Time</SelectItem>
+                <SelectItem value="2 times">2 Times</SelectItem>
+                <SelectItem value="3+ times">3 or More Times</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="nnsucePupilsCount" className="text-sm font-medium">
+              Last Exam Candidates Presented <span className="text-slate-400 text-xs">(optional)</span>
+            </Label>
+            <Input
+              id="nnsucePupilsCount"
+              type="number"
+              {...register('nnsucePupilsCount', { valueAsNumber: true })}
+              placeholder="e.g. 45 pupils"
               className="h-11"
             />
           </div>

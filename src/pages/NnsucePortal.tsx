@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -318,9 +317,8 @@ export default function NnsucePortal() {
   };
 
   return (
-    <Layout>
-      <div className="bg-slate-50 min-h-screen py-10 pb-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="space-y-6 pb-12">
+      <div className="space-y-8">
           {/* Header Banner */}
           <div className="rounded-2xl p-6 sm:p-8 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white shadow-xl relative overflow-hidden border border-emerald-500/30">
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -1079,6 +1077,5 @@ export default function NnsucePortal() {
           </Tabs>
         </div>
       </div>
-    </Layout>
   );
 }

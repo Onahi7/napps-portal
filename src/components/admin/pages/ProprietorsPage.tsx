@@ -28,7 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Filter, Download, MoreVertical, Eye, Edit, Trash2, Phone, Mail, Users } from 'lucide-react';
+import { Search, Filter, Download, MoreVertical, Eye, Edit, Trash2, Phone, Mail, Users, FileSpreadsheet, FileText } from 'lucide-react';
+import { exportToCSV, exportTableToPDF } from '@/lib/export-utils';
+import { toast } from 'sonner';
 
 interface Proprietor {
   _id: string;
@@ -110,6 +112,67 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  const handleExportCSV = () => {
+    try {
+      if (!filteredProprietors || filteredProprietors.length === 0) {
+        toast.error("No proprietors to export");
+        return;
+      }
+      exportToCSV(
+        filteredProprietors.map(p => ({
+          name: `${p.firstName} ${p.lastName}`.trim(),
+          phone: p.phone || '',
+          email: p.email || '',
+          schoolName: p.school?.name || (p as any).schoolName || 'N/A',
+          chapter: (p as any).chapter || (p as any).lga || 'Nasarawa',
+          status: p.registrationStatus,
+          registeredAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-NG') : 'N/A',
+        })),
+        'NAPPS_Proprietors_Registry',
+        {
+          name: 'Proprietor Name',
+          phone: 'Phone Number',
+          email: 'Email Address',
+          schoolName: 'School Name',
+          chapter: 'Chapter / LGA',
+          status: 'Registration Status',
+          registeredAt: 'Registered Date'
+        }
+      );
+      toast.success("Proprietors exported to CSV successfully");
+    } catch (err: any) {
+      toast.error(err.message || "Export failed");
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      if (!filteredProprietors || filteredProprietors.length === 0) {
+        toast.error("No proprietors to export");
+        return;
+      }
+      exportTableToPDF({
+        title: 'Accredited School Proprietors Master Registry',
+        subtitle: `Filter: ${statusFilter.toUpperCase()} | Total Records: ${filteredProprietors.length}`,
+        headers: ['S/N', 'Proprietor Name', 'School Name', 'Chapter', 'Phone', 'Status', 'Registered Date'],
+        rows: filteredProprietors.map((p, idx) => [
+          idx + 1,
+          `${p.firstName} ${p.lastName}`.trim(),
+          p.school?.name || (p as any).schoolName || 'N/A',
+          (p as any).chapter || (p as any).lga || 'Nasarawa',
+          p.phone || 'N/A',
+          p.registrationStatus,
+          p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-NG') : 'N/A',
+        ]),
+        filename: 'NAPPS_Proprietors_Master_List',
+        orientation: 'landscape'
+      });
+      toast.success("Executive PDF report generated");
+    } catch (err: any) {
+      toast.error(err.message || "PDF generation failed");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -158,10 +221,26 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
               <Filter className="w-4 h-4 mr-2" />
               More Filters
             </Button>
-            <Button variant="outline">
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2 font-semibold">
+                  <Download className="w-4 h-4 text-emerald-700" />
+                  Export Data
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleExportCSV} className="cursor-pointer">
+                  <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-600" />
+                  Export to Excel (CSV)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
+                  <FileText className="w-4 h-4 mr-2 text-red-600" />
+                  Export Executive PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Table */}

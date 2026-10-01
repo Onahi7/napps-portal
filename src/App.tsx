@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Admin from "./pages/Admin";
@@ -51,13 +51,14 @@ const App = () => (
           <Route path="/levy-payment" element={<LevyPayment />} />
           <Route path="/levy-payment/verify" element={<LevyPaymentVerify />} />
           <Route path="/levy-payment/download" element={<LevyPaymentDownload />} />
-          <Route path="/nnsuce" element={<NnsucePortal />} />
+          {/* Secured administrative & internal features redirect to /admin */}
+          <Route path="/nnsuce" element={<Navigate to="/admin" replace />} />
           <Route path="/verify" element={<SchoolVerification />} />
           <Route path="/verify-member" element={<SchoolVerification />} />
-          <Route path="/monitoring" element={<MonitoringDashboards />} />
-          <Route path="/dashboards" element={<MonitoringDashboards />} />
-          <Route path="/validation-form" element={<ValidationFormPage />} />
-          <Route path="/membership-validation" element={<ValidationFormPage />} />
+          <Route path="/monitoring" element={<Navigate to="/admin" replace />} />
+          <Route path="/dashboards" element={<Navigate to="/admin" replace />} />
+          <Route path="/validation-form" element={<Navigate to="/register" replace />} />
+          <Route path="/membership-validation" element={<Navigate to="/register" replace />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -16,14 +16,15 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <!-- Content Security Policy for Flutterwave Integration -->
+    <!-- Content Security Policy for API, Flutterwave, and OCR Worker -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.flutterwave.com https://api.ravepay.co;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.flutterwave.com https://api.ravepay.co blob:;
       style-src 'self' 'unsafe-inline' https://checkout.flutterwave.com https://fonts.googleapis.com;
       img-src 'self' data: https: blob:;
       font-src 'self' data: https://checkout.flutterwave.com https://fonts.gstatic.com;
-      connect-src 'self' https://checkout.flutterwave.com https://api.ravepay.co https://api.flutterwave.com https://api.nappsnasarawa.com http://localhost:3001;
+      connect-src 'self' https://checkout.flutterwave.com https://api.ravepay.co https://api.flutterwave.com https://api.nappsnasarawa.com https://napps-backend-5ty7.onrender.com https://*.onrender.com http://localhost:3000 http://localhost:3001 https://cdn.jsdelivr.net https://tessdata.projectnaptha.com blob: data:;
+      worker-src 'self' blob:;
       frame-src 'self' https://checkout.flutterwave.com https://api.ravepay.co;
       object-src 'none';
       base-uri 'self';
