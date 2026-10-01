@@ -486,6 +486,8 @@ export const ProprietorDashboard = () => {
               )}
             </CardContent>
           </Card>
+        );
+
       case 'idcard':
         return (
           <Card>
