@@ -4,9 +4,7 @@ import {
   CreditCard, 
   Upload, 
   Settings, 
-  FileText, 
   BarChart3, 
-  School, 
   DollarSign, 
   BookOpen, 
   Building2,
@@ -15,7 +13,6 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import nappsLogo from '@/assets/napps-logo.png';
 
 interface SidebarProps {
@@ -31,19 +28,16 @@ const navigationSections = [
         name: 'Dashboard', 
         icon: LayoutDashboard, 
         page: 'dashboard' as const,
-        badge: null
       },
       { 
         name: 'Proprietors & Schools', 
         icon: Users, 
         page: 'proprietors' as const,
-        badge: null
       },
       { 
         name: 'Chapters (13 LGAs)', 
         icon: BookOpen, 
         page: 'chapters' as const,
-        badge: '13'
       },
     ]
   },
@@ -54,13 +48,11 @@ const navigationSections = [
         name: 'NNSUCE Exams & OMR', 
         icon: GraduationCap, 
         page: 'nnsuce' as const,
-        badge: 'NEW'
       },
       { 
         name: '4-Tier Dues Ledger', 
         icon: BarChart3, 
         page: 'monitoring' as const,
-        badge: '20/35/20/25'
       },
     ]
   },
@@ -71,25 +63,21 @@ const navigationSections = [
         name: 'Payment Transactions', 
         icon: CreditCard, 
         page: 'payments' as const,
-        badge: 'Fidelity'
       },
       { 
         name: 'Levy Payments', 
         icon: Building2, 
         page: 'levy-payments' as const,
-        badge: null
       },
       { 
         name: 'Fee Schedule', 
         icon: DollarSign, 
         page: 'fees' as const,
-        badge: null
       },
       { 
         name: 'Import Legacy Data', 
         icon: Upload, 
         page: 'import' as const,
-        badge: null
       },
     ]
   },
@@ -100,7 +88,6 @@ const navigationSections = [
         name: 'System Settings', 
         icon: Settings, 
         page: 'settings' as const,
-        badge: null
       },
     ]
   },
@@ -152,14 +139,6 @@ export function AdminSidebar({ currentPage, onNavigate }: SidebarProps) {
                     <item.icon className={cn("w-4 h-4", active ? "text-white" : "text-slate-400 group-hover:text-emerald-400")} />
                     <span>{item.name}</span>
                   </div>
-                  {item.badge && (
-                    <span className={cn(
-                      "px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase",
-                      active ? "bg-white text-emerald-950" : "bg-emerald-950 text-emerald-300 border border-emerald-800"
-                    )}>
-                      {item.badge}
-                    </span>
-                  )}
                 </button>
               );
             })}

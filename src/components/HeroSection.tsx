@@ -89,8 +89,8 @@ export const HeroSection = () => {
               <div className="text-xs text-slate-300 mt-1 font-medium">Automated Dues Split</div>
             </div>
             <div className="p-4 rounded-xl bg-white/[0.07] border border-white/10 backdrop-blur-sm">
-              <div className="text-2xl sm:text-3xl font-extrabold text-amber-400">Fidelity</div>
-              <div className="text-xs text-slate-300 mt-1 font-medium">Dynamic Virtual Accts</div>
+              <div className="text-2xl sm:text-3xl font-extrabold text-amber-400">100%</div>
+              <div className="text-xs text-slate-300 mt-1 font-medium">Verified Dues Clearance</div>
             </div>
           </div>
         </div>
@@ -114,9 +114,9 @@ export const HeroSection = () => {
               <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center mb-3.5 border border-emerald-500/30">
                 <CreditCard className="w-5 h-5" />
               </div>
-              <h3 className="text-sm font-bold mb-1.5 text-white">Fidelity Dynamic Accounts</h3>
+              <h3 className="text-sm font-bold mb-1.5 text-white">Automated Virtual Accounts</h3>
               <p className="text-slate-300 text-xs leading-relaxed">
-                Unique dedicated virtual account generated per school with instant credit detection and 4-tier statutory remittance.
+                Dedicated virtual collection accounts generated per school with instant payment reconciliation and 4-tier statutory remittance.
               </p>
             </CardContent>
           </Card>
