@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/pagination';
 import { Search, Filter, Download, MoreVertical, Eye, Edit, Trash2, Phone, Mail, Users, FileSpreadsheet, FileText, RefreshCw, AlertCircle, School, Clock } from 'lucide-react';
 import { exportToCSV, exportTableToPDF } from '@/lib/export-utils';
+import { NAPPS_CHAPTERS } from '@/constants/napps-chapters';
 import { toast } from 'sonner';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
@@ -71,6 +72,7 @@ interface Proprietor {
   submissionStatus?: string;
   isActive?: boolean;
   nappsMembershipId?: string;
+  totalAmountDue?: number;
   createdAt: string;
 }
 
@@ -94,6 +96,8 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [chapterFilter, setChapterFilter] = useState<string>('all');
+  const [yearFilter, setYearFilter] = useState<string>('all');
   const [pageSize, setPageSize] = useState<string>('25');
   const [refreshing, setRefreshing] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Proprietor | null>(null);
@@ -133,6 +137,11 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
       });
       if (debouncedSearch) params.set('search', debouncedSearch);
       if (statusFilter !== 'all') params.set('registrationStatus', statusFilter);
+      if (chapterFilter !== 'all') params.set('chapter', chapterFilter);
+      if (yearFilter !== 'all') {
+        params.set('dateFrom', `${yearFilter}-01-01T00:00:00.000Z`);
+        params.set('dateTo', `${yearFilter}-12-31T23:59:59.999Z`);
+      }
 
       const response = await fetch(`${API_BASE_URL}/proprietors?${params.toString()}`, {
         headers: { 'Authorization': `Bearer ${authToken}` },
@@ -168,7 +177,7 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
         setRefreshing(false);
       }
     }
-  }, [authToken, debouncedSearch, statusFilter, pageSize]);
+  }, [authToken, debouncedSearch, statusFilter, chapterFilter, yearFilter, pageSize]);
 
   // Refetch whenever filters change (back to page 1), or on refresh
   useEffect(() => {
@@ -281,6 +290,11 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
     });
     if (debouncedSearch) params.set('search', debouncedSearch);
     if (statusFilter !== 'all') params.set('registrationStatus', statusFilter);
+    if (chapterFilter !== 'all') params.set('chapter', chapterFilter);
+    if (yearFilter !== 'all') {
+      params.set('dateFrom', `${yearFilter}-01-01T00:00:00.000Z`);
+      params.set('dateTo', `${yearFilter}-12-31T23:59:59.999Z`);
+    }
 
     const all: Proprietor[] = [];
     let page = 1;
@@ -366,11 +380,113 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
     }
   };
 
-  const hasFilters = debouncedSearch !== '' || statusFilter !== 'all';
+  type SummaryGroupBy = 'chapter' | 'year';
+
+  const activeFilterLabels = [
+    debouncedSearch && `search "${debouncedSearch}"`,
+    statusFilter !== 'all' && `status ${statusFilter}`,
+    chapterFilter !== 'all' && `chapter ${chapterFilter}`,
+    yearFilter !== 'all' && `year ${yearFilter}`,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  const summarize = (records: Proprietor[], groupBy: SummaryGroupBy) => {
+    const buckets = new Map<string, { total: number; approved: number; pending: number; other: number; amountDue: number }>();
+    for (const p of records) {
+      const key =
+        groupBy === 'chapter'
+          ? p.chapters?.[0] || 'Unassigned'
+          : p.createdAt
+            ? String(new Date(p.createdAt).getFullYear())
+            : 'Unknown';
+      const bucket = buckets.get(key) || { total: 0, approved: 0, pending: 0, other: 0, amountDue: 0 };
+      bucket.total += 1;
+      if (p.registrationStatus === 'approved') bucket.approved += 1;
+      else if (p.registrationStatus === 'pending') bucket.pending += 1;
+      else bucket.other += 1;
+      bucket.amountDue += p.totalAmountDue || 0;
+      buckets.set(key, bucket);
+    }
+    return [...buckets.entries()]
+      .map(([key, value]) => ({ key, ...value }))
+      .sort((a, b) => (groupBy === 'year' ? b.key.localeCompare(a.key) : b.total - a.total));
+  };
+
+  const handleExportSummary = async (groupBy: SummaryGroupBy, format: 'csv' | 'pdf') => {
+    try {
+      setExporting(true);
+      toast.info(`Building ${groupBy} summary for the filtered registry...`);
+      const records = await fetchAllForExport();
+      if (records.length === 0) {
+        toast.error('No records match the current filters');
+        return;
+      }
+      const rows = summarize(records, groupBy);
+      const label = groupBy === 'chapter' ? 'Chapter' : 'Year';
+      const scope = activeFilterLabels || 'All records';
+
+      if (format === 'csv') {
+        exportToCSV(
+          rows.map((r) => ({
+            group: r.key,
+            total: r.total,
+            approved: r.approved,
+            pending: r.pending,
+            other: r.other,
+            amountDue: r.amountDue,
+            share: ((r.total / records.length) * 100).toFixed(1),
+          })),
+          `NAPPS_Proprietors_by_${label}`,
+          {
+            group: label,
+            total: 'Total',
+            approved: 'Approved',
+            pending: 'Pending',
+            other: 'Other',
+            amountDue: 'Amount Due (NGN)',
+            share: 'Share of Total (%)',
+          }
+        );
+        toast.success(`Exported ${rows.length} ${label.toLowerCase()} summary rows to CSV`);
+      } else {
+        const countBy = (status: string) => records.filter((p) => p.registrationStatus === status).length;
+        const totalDue = records.reduce((sum, p) => sum + (p.totalAmountDue || 0), 0);
+        exportTableToPDF({
+          title: `Proprietor Registry Summary by ${label}`,
+          subtitle: `${records.length.toLocaleString()} matching records | ${scope}`,
+          headers: ['S/N', label, 'Total', 'Approved', 'Pending', 'Other', 'Amount Due (NGN)'],
+          rows: rows.map((r, idx) => [idx + 1, r.key, r.total, r.approved, r.pending, r.other, r.amountDue.toLocaleString('en-NG')]),
+          totalsRow: [
+            '',
+            'TOTAL',
+            records.length,
+            countBy('approved'),
+            countBy('pending'),
+            records.length - countBy('approved') - countBy('pending'),
+            totalDue.toLocaleString('en-NG'),
+          ],
+          columnWidths: [34, 160, 70, 85, 80, 70, 135],
+          filename: `NAPPS_Proprietors_by_${label}`,
+          orientation: 'landscape',
+          footerNote: `Confidential | Generated ${new Date().toLocaleDateString('en-NG')} | NAPPS Nasarawa State`,
+        });
+        toast.success(`${label} summary PDF generated`);
+      }
+    } catch (err: unknown) {
+      toast.error((err as Error).message || 'Summary export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const hasFilters = debouncedSearch !== '' || statusFilter !== 'all' || chapterFilter !== 'all' || yearFilter !== 'all';
   const clearFilters = () => {
     setSearchQuery('');
     setDebouncedSearch('');
     setStatusFilter('all');
+    setChapterFilter('all');
+    setYearFilter('all');
   };
 
   const startItem = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
@@ -442,6 +558,30 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
                 <SelectItem value="suspended">Suspended</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={chapterFilter} onValueChange={setChapterFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by chapter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Chapters</SelectItem>
+                {NAPPS_CHAPTERS.map((chapter) => (
+                  <SelectItem key={chapter} value={chapter}>
+                    {chapter}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={yearFilter} onValueChange={setYearFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Filter by year" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                <SelectItem value="2026">2026</SelectItem>
+                <SelectItem value="2025">2025</SelectItem>
+                <SelectItem value="2024">2024</SelectItem>
+              </SelectContent>
+            </Select>
             {hasFilters && (
               <Button variant="ghost" onClick={clearFilters}>
                 <Filter className="w-4 h-4 mr-2" />
@@ -476,6 +616,24 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
                 <DropdownMenuItem onClick={() => handleExportPDF('all')} disabled={exporting || pagination.total === 0} className="cursor-pointer">
                   <FileText className="w-4 h-4 mr-2 text-red-600" />
                   Export all records (PDF)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Summaries (respects filters)</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleExportSummary('chapter', 'csv')} disabled={exporting || pagination.total === 0} className="cursor-pointer">
+                  <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-600" />
+                  By chapter (CSV)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportSummary('chapter', 'pdf')} disabled={exporting || pagination.total === 0} className="cursor-pointer">
+                  <FileText className="w-4 h-4 mr-2 text-red-600" />
+                  By chapter (PDF)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportSummary('year', 'csv')} disabled={exporting || pagination.total === 0} className="cursor-pointer">
+                  <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-600" />
+                  By year (CSV)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportSummary('year', 'pdf')} disabled={exporting || pagination.total === 0} className="cursor-pointer">
+                  <FileText className="w-4 h-4 mr-2 text-red-600" />
+                  By year (PDF)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
