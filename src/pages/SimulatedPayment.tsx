@@ -45,7 +45,7 @@ export const SimulatedPayment = () => {
         setLoading(true);
         const response = await fetch(`${API_BASE_URL}/payments/reference/${reference}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${(localStorage.getItem('admin_token') || localStorage.getItem('token'))}`,
           },
         });
 

@@ -143,7 +143,7 @@ export default function ProprietorDetailPage() {
   const fetchProprietor = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -190,7 +190,7 @@ export default function ProprietorDetailPage() {
   const handleSaveEnrollment = async () => {
     try {
       setSaving(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors/${id}/enrollment`, {
         method: 'PATCH',
         headers: {
@@ -217,7 +217,7 @@ export default function ProprietorDetailPage() {
   const handleSavePayment = async () => {
     try {
       setSaving(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors/${id}/payment`, {
         method: 'PATCH',
         headers: {

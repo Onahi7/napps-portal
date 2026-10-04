@@ -110,7 +110,7 @@ export default function FeeConfigurationManager() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = (localStorage.getItem('admin_token') || localStorage.getItem('token'));
       const response = await fetch(`${API_URL}/fees/configuration/statistics`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -128,7 +128,7 @@ export default function FeeConfigurationManager() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = (localStorage.getItem('admin_token') || localStorage.getItem('token'));
       const payload = {
         name: formData.name,
         code: formData.code,
@@ -209,7 +209,7 @@ export default function FeeConfigurationManager() {
     if (!confirm('Are you sure you want to delete this fee configuration?')) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = (localStorage.getItem('admin_token') || localStorage.getItem('token'));
       const response = await fetch(`${API_URL}/fees/configuration/${id}`, {
         method: 'DELETE',
         headers: {
@@ -228,7 +228,7 @@ export default function FeeConfigurationManager() {
 
   const handleToggleActive = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = (localStorage.getItem('admin_token') || localStorage.getItem('token'));
       const response = await fetch(`${API_URL}/fees/configuration/${id}/toggle-active`, {
         method: 'PATCH',
         headers: {
