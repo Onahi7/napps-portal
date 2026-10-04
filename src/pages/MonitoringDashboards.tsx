@@ -26,7 +26,7 @@ import { DuesDistributionBreakdown } from "@/components/dues/DuesDistributionBre
 import { toast } from "sonner";
 
 export default function MonitoringDashboards() {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
 
   const [roleTab, setRoleTab] = useState("state");
   const [selectedLga, setSelectedLga] = useState("Lafia");

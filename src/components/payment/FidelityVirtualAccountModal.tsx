@@ -53,7 +53,7 @@ export const FidelityVirtualAccountModal: React.FC<FidelityVirtualAccountModalPr
   const [paymentConfirmed, setPaymentConfirmed] = useState<boolean>(false);
 
   const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
+    import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
 
   // Calculate remaining time
   useEffect(() => {

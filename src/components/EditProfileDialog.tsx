@@ -37,7 +37,7 @@ export const EditProfileDialog = ({ open, onClose, proprietorData, onSave }: Edi
     setIsSubmitting(true);
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
       
       const response = await fetch(`${API_BASE_URL}/proprietors/${proprietorData._id}`, {
         method: 'PATCH',

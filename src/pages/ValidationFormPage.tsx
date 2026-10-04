@@ -12,7 +12,7 @@ export const ValidationFormPage = () => {
   const [searchParams] = useSearchParams();
   const queryId = searchParams.get('id');
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
 
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('');

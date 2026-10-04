@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { BarChart3, TrendingUp, Users, CreditCard, FileText, DollarSign, Activity, MapPin } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 interface DashboardPageProps {
   onNavigate: (page: 'dashboard' | 'proprietors' | 'schools' | 'payments' | 'fees' | 'chapters' | 'import' | 'settings') => void;
@@ -31,7 +32,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
   const authToken = localStorage.getItem('admin_token');
 
   useEffect(() => {
@@ -49,6 +50,15 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
           }
         });
 
+        if (response.status === 401) {
+          console.error('Session expired or invalid token (401)');
+          toast.error('Session expired', {
+            description: 'Please log in again to view dashboard statistics.',
+          });
+          setLoading(false);
+          return;
+        }
+
         if (!response.ok) {
           throw new Error('Failed to fetch stats');
         }
@@ -57,6 +67,9 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
         setStats(data);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
+        toast.error('Failed to load dashboard data', {
+          description: 'Check your connection and try again.',
+        });
         setStats({
           total: 0,
           byStatus: {},

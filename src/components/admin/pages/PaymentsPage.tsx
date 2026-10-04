@@ -16,6 +16,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -67,7 +69,7 @@ interface Payment {
   status: 'pending' | 'success' | 'failed';
   email: string;
   description?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   paystackTransactionId?: string;
   createdAt: string;
   paidAt?: string;
@@ -276,7 +278,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
       }
 
       const data: PaymentsResponse = await response.json();
-      let allPayments = data.data || [];
+      const allPayments = data.data || [];
 
       // Apply client-side filters (search and chapter)
       const dataToExport = allPayments.filter((payment) => {
@@ -300,60 +302,40 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
         return;
       }
 
-      // Prepare CSV headers
-      const headers = [
-        'Payment Date',
-        'Proprietor Name',
-        'Email',
-        'Phone',
-        'School',
-        'Chapter',
-        'Amount (₦)',
-        'Status',
-        'Payment Type',
-        'Reference',
-        'Payment Method',
-        'Transaction ID'
-      ];
+      const rows = dataToExport.map((payment) => ({
+        date: payment.paidAt
+          ? new Date(payment.paidAt).toLocaleDateString('en-NG')
+          : new Date(payment.createdAt).toLocaleDateString('en-NG'),
+        name: `${payment.proprietorId?.firstName || ''} ${payment.proprietorId?.lastName || ''}`.trim() || 'N/A',
+        email: payment.proprietorId?.email || 'N/A',
+        contactEmail: payment.email || 'N/A',
+        school: payment.schoolId?.schoolName || 'N/A',
+        chapter:
+          payment.proprietorId?.chapters && payment.proprietorId.chapters.length > 0
+            ? payment.proprietorId.chapters.join('; ')
+            : 'Unassigned',
+        amount: (payment.amount / 100).toFixed(2),
+        status: payment.status,
+        paymentType: payment.paymentType || 'N/A',
+        reference: payment.reference,
+        method: payment.reference.startsWith('SIM_') ? 'Simulated' : 'Online',
+        transactionId: payment.paystackTransactionId || 'N/A',
+      }));
 
-      // Prepare CSV rows
-      const rows = dataToExport.map(payment => [
-        payment.paidAt 
-          ? new Date(payment.paidAt).toLocaleDateString()
-          : new Date(payment.createdAt).toLocaleDateString(),
-        `${payment.proprietorId?.firstName || ''} ${payment.proprietorId?.lastName || ''}`.trim() || 'N/A',
-        payment.proprietorId?.email || 'N/A',
-        payment.email || 'N/A',
-        payment.schoolId?.schoolName || 'N/A',
-        payment.proprietorId?.chapters && payment.proprietorId.chapters.length > 0 
-          ? payment.proprietorId.chapters.join('; ') 
-          : 'Unassigned',
-        (payment.amount / 100).toFixed(2),
-        payment.status,
-        payment.paymentType || 'N/A',
-        payment.reference,
-        payment.reference.startsWith('SIM_') ? 'Simulated' : 'Online',
-        payment.paystackTransactionId || 'N/A'
-      ]);
-
-      // Combine headers and rows
-      const csvContent = [
-        headers.join(','),
-        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
-
-      // Create and download file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      
-      link.setAttribute('href', url);
-      link.setAttribute('download', `payments_export_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      exportToCSV(rows, 'NAPPS_Payments_Ledger', {
+        date: 'Payment Date',
+        name: 'Proprietor Name',
+        email: 'Email',
+        contactEmail: 'Contact Email',
+        school: 'School',
+        chapter: 'Chapter',
+        amount: 'Amount (₦)',
+        status: 'Status',
+        paymentType: 'Payment Type',
+        reference: 'Reference',
+        method: 'Payment Method',
+        transactionId: 'Transaction ID',
+      });
 
       toast.success(`Successfully exported ${dataToExport.length} payment records`);
     } catch (error) {
@@ -371,6 +353,11 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
         toast.error("No transactions to export");
         return;
       }
+      const amountOf = (p: (typeof dataToExport)[number]) =>
+        typeof p.amount === 'number' ? (p.amount > 100000 ? p.amount / 100 : p.amount) : 0;
+      const totalAmount = dataToExport.reduce((sum, p) => sum + amountOf(p), 0);
+      const money = (n: number) => `₦${n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
       exportTableToPDF({
         title: 'NAPPS Nasarawa State Payments & Revenue Ledger',
         subtitle: `Status: ${statusFilter.toUpperCase()} | Chapter: ${chapterFilter} | Records: ${dataToExport.length}`,
@@ -379,18 +366,21 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
           idx + 1,
           p.reference || 'N/A',
           `${p.proprietorId?.firstName || ''} ${p.proprietorId?.lastName || ''}`.trim() || 'N/A',
-          p.schoolId?.schoolName || (p as any).schoolName || 'N/A',
-          `₦${(typeof p.amount === 'number' ? (p.amount > 100000 ? p.amount / 100 : p.amount) : 0).toLocaleString()}`,
+          p.schoolId?.schoolName || (p as unknown as { schoolName?: string }).schoolName || 'N/A',
+          money(amountOf(p)),
           p.paymentMethod === 'fidelity' ? 'Fidelity Bank' : (p.reference?.startsWith('SIM_') ? 'Simulated' : 'Paystack'),
           (p.status || 'pending').toUpperCase(),
           p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-NG') : new Date(p.createdAt).toLocaleDateString('en-NG'),
         ]),
+        totalsRow: ['', '', `TOTAL: ${dataToExport.length} transactions`, '', money(totalAmount), '', '', ''],
+        columnWidths: [32, 100, 135, 135, 95, 85, 75, 85],
         filename: 'NAPPS_Payment_Transactions_Report',
-        orientation: 'landscape'
+        orientation: 'landscape',
+        footerNote: 'Confidential | NAPPS Nasarawa State Portal | Payments Ledger',
       });
       toast.success("Executive PDF report generated successfully");
-    } catch (err: any) {
-      toast.error(err.message || "PDF generation failed");
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || "PDF generation failed");
     }
   };
 

@@ -16,6 +16,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -105,7 +107,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
     pages: 0,
   });
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
 
   const fetchLevyPaymentsData = useCallback(async (page: number = 1, limit: number = 10) => {
     try {
@@ -239,7 +241,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
       }
 
       const data: LevyPaymentsResponse = await response.json();
-      let allPayments = data.data || [];
+      const allPayments = data.data || [];
 
       const dataToExport = allPayments.filter((payment) => {
         const matchesSearch = searchTerm === '' || 
@@ -256,54 +258,37 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
         return;
       }
 
-      const headers_csv = [
-        'Receipt Number',
-        'Payment Date',
-        'Member Name',
-        'Email',
-        'Phone',
-        'Chapter',
-        'School Name',
-        'Wards',
-        'Amount (₦)',
-        'Status',
-        'Reference',
-        'Payment Method'
-      ];
+      const rows = dataToExport.map((payment) => ({
+        receipt: payment.receiptNumber || 'N/A',
+        date: payment.paidAt
+          ? new Date(payment.paidAt).toLocaleDateString('en-NG')
+          : new Date(payment.createdAt).toLocaleDateString('en-NG'),
+        memberName: payment.memberName || 'N/A',
+        email: payment.email || 'N/A',
+        phone: payment.phone || 'N/A',
+        chapter: payment.chapter || 'N/A',
+        schoolName: payment.schoolName || 'N/A',
+        wards: payment.wards?.join('; ') || 'N/A',
+        amount: (payment.amount / 100).toFixed(2),
+        status: payment.status,
+        reference: payment.reference,
+        method: payment.paymentMethod || 'Paystack',
+      }));
 
-      const rows = dataToExport.map(payment => [
-        payment.receiptNumber || 'N/A',
-        payment.paidAt 
-          ? new Date(payment.paidAt).toLocaleDateString()
-          : new Date(payment.createdAt).toLocaleDateString(),
-        payment.memberName || 'N/A',
-        payment.email || 'N/A',
-        payment.phone || 'N/A',
-        payment.chapter || 'N/A',
-        payment.schoolName || 'N/A',
-        payment.wards?.join('; ') || 'N/A',
-        (payment.amount / 100).toFixed(2),
-        payment.status,
-        payment.reference,
-        payment.paymentMethod || 'Paystack'
-      ]);
-
-      const csvContent = [
-        headers_csv.join(','),
-        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      
-      link.setAttribute('href', url);
-      link.setAttribute('download', `levy_payments_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      exportToCSV(rows, 'NAPPS_Levy_Payments', {
+        receipt: 'Receipt Number',
+        date: 'Payment Date',
+        memberName: 'Member Name',
+        email: 'Email',
+        phone: 'Phone',
+        chapter: 'Chapter',
+        schoolName: 'School Name',
+        wards: 'Wards',
+        amount: 'Amount (₦)',
+        status: 'Status',
+        reference: 'Reference',
+        method: 'Payment Method',
+      });
 
       toast.success(`Successfully exported ${dataToExport.length} levy payment records`);
     } catch (error) {
@@ -321,6 +306,9 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
         toast.error("No levy records to export");
         return;
       }
+      const money = (n: number) => `₦${n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const totalAmount = dataToExport.reduce((sum, p) => sum + (p.amount || 0) / 100, 0);
+
       exportTableToPDF({
         title: 'NAPPS Nasarawa State Chapter - Levy Payments Registry',
         subtitle: `Chapter: ${chapterFilter} | Status: ${statusFilter.toUpperCase()} | Total Records: ${dataToExport.length}`,
@@ -331,16 +319,19 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
           p.memberName || 'N/A',
           p.schoolName || 'N/A',
           p.chapter || 'Nasarawa',
-          `₦${((p.amount || 0) / 100).toLocaleString()}`,
+          money((p.amount || 0) / 100),
           (p.status || 'pending').toUpperCase(),
           p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-NG') : new Date(p.createdAt).toLocaleDateString('en-NG'),
         ]),
+        totalsRow: ['', '', `TOTAL: ${dataToExport.length} records`, '', '', money(totalAmount), '', ''],
+        columnWidths: [32, 110, 130, 140, 85, 95, 75, 85],
         filename: 'NAPPS_Levy_Payments_Report',
-        orientation: 'landscape'
+        orientation: 'landscape',
+        footerNote: 'Confidential | NAPPS Nasarawa State Portal | Levy Payments Registry',
       });
       toast.success("Executive PDF report generated");
-    } catch (err: any) {
-      toast.error(err.message || "PDF generation failed");
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || "PDF generation failed");
     }
   };
 
@@ -361,7 +352,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
         paymentMethod: payment.paymentMethod || 'Online',
       });
       toast.success('Receipt downloaded successfully');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Receipt download error:', err);
       toast.error('Failed to generate receipt');
     }

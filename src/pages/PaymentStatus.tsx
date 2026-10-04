@@ -17,7 +17,7 @@ export default function PaymentStatus() {
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
   const reference = searchParams.get('reference');
   const submissionId = searchParams.get('submissionId');
 

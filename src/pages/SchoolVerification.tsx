@@ -29,7 +29,7 @@ export default function SchoolVerification() {
   const [searchParams] = useSearchParams();
   const queryId = searchParams.get('id') || searchParams.get('receipt') || searchParams.get('nnsuce') || searchParams.get('regNo');
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.nappsnasarawa.com/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
 
   const [searchTerm, setSearchTerm] = useState(queryId || "");
   const [loading, setLoading] = useState(false);
