@@ -309,9 +309,9 @@ export default function Register() {
       }
 
       const result = await response.json();
-      const paymentUrl = result.payment?.paymentUrl || result.paymentUrl;
+      const reference = result.payment?.reference || result.reference;
 
-      if (!paymentUrl) {
+      if (!reference) {
         throw new Error('Payment initialization failed');
       }
 
@@ -330,9 +330,7 @@ export default function Register() {
         duration: 3000,
       });
 
-      setTimeout(() => {
-        window.location.href = paymentUrl;
-      }, 500);
+      navigate(`/payment/simulate?reference=${reference}`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to complete registration');
       console.error(error);
