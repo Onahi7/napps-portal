@@ -8,6 +8,11 @@ import html2canvas from 'html2canvas';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
 
+interface FeeItem {
+  name?: string;
+  amount?: number;
+}
+
 interface PaymentData {
   status: string;
   reference: string;
@@ -16,6 +21,10 @@ interface PaymentData {
   amount: number;
   paidAt?: string;
   paymentType?: string;
+  paymentMethod?: string;
+  gateway?: string;
+  simulated?: boolean;
+  fees?: FeeItem[];
   proprietor?: {
     firstName: string;
     middleName?: string;
@@ -329,6 +338,24 @@ export const PaymentSuccess = () => {
                   </div>
                 )}
 
+                {(paymentData.fees?.length ?? 0) > 0 && (
+                  <div className="space-y-2 p-4 bg-secondary/10 rounded-lg">
+                    <h4 className="font-semibold text-sm">Fee Breakdown</h4>
+                    <div className="text-sm space-y-1">
+                      {paymentData.fees!.map((fee, index) => (
+                        <div key={`${fee.name}-${index}`} className="flex justify-between">
+                          <span className="text-muted-foreground">{fee.name}</span>
+                          <span className="font-medium">₦{(fee.amount || 0).toLocaleString()}</span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between border-t pt-1 mt-1 font-semibold">
+                        <span>Total</span>
+                        <span>₦{(paymentData.amount || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <div className="flex justify-between py-2 border-b">
                     <span className="text-muted-foreground">Reference Number</span>
@@ -369,12 +396,19 @@ export const PaymentSuccess = () => {
                     <span className="text-sm font-semibold">2025/2026</span>
                   </div>
 
-                  <div className="flex justify-between py-2">
+                  <div className="flex justify-between py-2 border-b">
                     <span className="text-muted-foreground">Payment Type</span>
                     <span className="text-sm capitalize">
                       {paymentData.paymentType?.replace('_', ' ') || 'NAPPS Nasarawa Data Capturing'}
                     </span>
                   </div>
+
+                  {paymentData.simulated && (
+                    <div className="flex justify-between py-2">
+                      <span className="text-muted-foreground">Payment Mode</span>
+                      <span className="text-sm font-semibold text-amber-600">Test / Simulation</span>
+                    </div>
+                  )}
                 </div>
               </>
             )}

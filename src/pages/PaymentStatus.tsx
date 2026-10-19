@@ -35,7 +35,7 @@ export default function PaymentStatus() {
           if (response.ok) {
             const data = await response.json();
             setPaymentDetails(data);
-            setStatus(data.status === 'completed' ? 'success' : 'failed');
+            setStatus(['success', 'completed'].includes(data.status) ? 'success' : 'failed');
           } else {
             setStatus('failed');
           }

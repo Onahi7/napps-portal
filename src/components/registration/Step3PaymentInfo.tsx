@@ -7,13 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2, Info, CreditCard, Upload, AlertCircle, Building2 } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { CheckCircle2, Info, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 const step3Schema = z.object({
-  paymentMethod: z.enum(['fidelity', 'online', 'bank_transfer']),
+  paymentMethod: z.enum(['mock', 'online', 'fidelity', 'bank_transfer']),
   confirmAccuracy: z.boolean().refine(val => val === true, {
     message: 'You must confirm the accuracy of the information'
   })
@@ -48,21 +47,20 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
   const [loadingFees, setLoadingFees] = useState(true);
 
   const {
-    register,
     handleSubmit,
     formState: { errors },
     setValue,
     watch
   } = useForm<Step3FormData>({
     resolver: zodResolver(step3Schema),
-    defaultValues: initialData || {
-      paymentMethod: 'fidelity',
+    defaultValues: {
+      paymentMethod: 'mock',
+      ...initialData,
       confirmAccuracy: false
     }
   });
 
   const confirmAccuracy = watch('confirmAccuracy');
-  const paymentMethod = watch('paymentMethod');
 
   // Fetch active fees from backend
   useEffect(() => {
@@ -107,7 +105,7 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
             Registration Fees
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm">
-            Applicable fees for your school registration
+            Registration and annual dues for your school
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 space-y-3">
@@ -149,97 +147,42 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
         </CardContent>
       </Card>
 
-      {/* Payment Method Selection */}
+      {/* Payment Method */}
       <div className="space-y-4">
         <div>
           <h3 className="text-base sm:text-lg font-semibold text-gray-900">Payment Method</h3>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Choose how you would like to make payment
+            Complete your registration with a secure card payment
           </p>
         </div>
 
-        <RadioGroup
-          value={paymentMethod}
-          onValueChange={(value) => setValue('paymentMethod', value as 'fidelity' | 'online' | 'bank_transfer')}
-          className="space-y-3"
-        >
-          {/* Fidelity Bank Direct Transfer */}
-          <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-            paymentMethod === 'fidelity' 
-              ? 'border-emerald-600 bg-emerald-50/40 ring-1 ring-emerald-600' 
-              : 'border-gray-200 hover:border-gray-300'
-          }`}>
-            <RadioGroupItem value="fidelity" id="fidelity" className="mt-1 text-emerald-700" />
-            <Label htmlFor="fidelity" className="flex-1 cursor-pointer">
-              <div className="flex items-center gap-2 mb-1">
-                <Building2 className="w-4 h-4 text-emerald-700" />
-                <span className="font-semibold text-sm sm:text-base text-gray-900">
-                  Fidelity Bank Direct Transfer (Instant Virtual Account)
-                </span>
-                <Badge className="bg-emerald-600 text-white text-[11px] font-bold">
-                  Recommended
-                </Badge>
-              </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Get an instant dynamic Fidelity Bank account number and transfer from your bank app or USSD. Automatically verifies and issues your confirmation within seconds.
-              </p>
-            </Label>
+        <div className="flex items-start space-x-3 p-4 rounded-lg border-2 border-emerald-600 bg-emerald-50/40 ring-1 ring-emerald-600">
+          <CreditCard className="w-5 h-5 text-emerald-700 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-semibold text-sm sm:text-base text-gray-900">
+                Secure Card Payment
+              </span>
+              <Badge className="bg-emerald-600 text-white text-[11px] font-bold">
+                Recommended
+              </Badge>
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Enter your card details on the secure payment page. Your registration is
+              confirmed and your registration number is issued immediately after payment.
+            </p>
           </div>
+        </div>
 
-          {/* Paystack Online Payment */}
-          <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-            paymentMethod === 'online' 
-              ? 'border-primary bg-primary/5' 
-              : 'border-gray-200 hover:border-gray-300'
-          }`}>
-            <RadioGroupItem value="online" id="online" className="mt-1" />
-            <Label htmlFor="online" className="flex-1 cursor-pointer">
-              <div className="flex items-center gap-2 mb-1">
-                <CreditCard className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-sm sm:text-base">Pay with Card (Paystack)</span>
-              </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Pay with Debit Card (Mastercard, Visa, Verve) via Paystack gateway.
-              </p>
-            </Label>
-          </div>
-
-          {/* Bank Transfer */}
-          <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-            paymentMethod === 'bank_transfer' 
-              ? 'border-primary bg-primary/5' 
-              : 'border-gray-200 hover:border-gray-300'
-          }`}>
-            <RadioGroupItem value="bank_transfer" id="bank_transfer" className="mt-1" />
-            <Label htmlFor="bank_transfer" className="flex-1 cursor-pointer">
-              <div className="flex items-center gap-2 mb-1">
-                <Upload className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-sm sm:text-base">Manual Secretariat Bank Transfer</span>
-              </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Make manual payment to the NAPPS state account. Registration will be marked as "Pending Payment Verification" until admin manually verifies proof.
-              </p>
-            </Label>
-          </div>
-        </RadioGroup>
-      </div>
-
-
-      {/* Bank Transfer Instructions */}
-      {paymentMethod === 'bank_transfer' && (
-        <Alert className="bg-amber-50 border-amber-200">
-          <AlertCircle className="h-4 w-4 text-amber-600" />
+        <Alert className="bg-blue-50 border-blue-200">
+          <Info className="h-4 w-4 text-blue-600 flex-shrink-0" />
           <AlertDescription className="text-xs sm:text-sm text-gray-700">
-            <strong>Bank Transfer Instructions:</strong>
-            <ol className="list-decimal ml-4 mt-2 space-y-1">
-              <li>Submit this form to receive your submission ID</li>
-              <li>Make payment to the NAPPS Nasarawa account</li>
-              <li>Contact the admin with your submission ID and payment proof</li>
-              <li>Admin will verify and approve your registration</li>
-            </ol>
+            <strong>Secure test mode:</strong> payments are currently processed in a
+            simulation environment. No real card is charged, but every detail is captured
+            and your registration is finalized automatically.
           </AlertDescription>
         </Alert>
-      )}
+      </div>
 
       {/* Information Summary Alert */}
       <Alert className="bg-blue-50 border-blue-200">
@@ -289,15 +232,10 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
         <Alert className="bg-green-50 border-green-200">
           <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
           <AlertDescription className="text-xs sm:text-sm text-gray-700">
-            {paymentMethod === 'online' ? (
-              <span>
-                <strong>✅ Ready to proceed!</strong> Click below to continue to secure payment.
-              </span>
-            ) : (
-              <span>
-                <strong>✅ Ready to submit!</strong> Your registration will be pending payment verification.
-              </span>
-            )}
+            <span>
+              <strong>✅ Ready to proceed!</strong> Click below to continue to the secure
+              payment page. Your registration is confirmed the moment payment succeeds.
+            </span>
           </AlertDescription>
         </Alert>
       )}
@@ -318,7 +256,7 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
           disabled={isSubmitting || !confirmAccuracy}
           className="w-full sm:w-auto min-w-[220px] order-1 sm:order-2 bg-green-600 hover:bg-green-700 text-sm sm:text-base font-semibold"
         >
-          {isSubmitting ? '⏳ Processing...' : paymentMethod === 'online' ? '→ Proceed to Payment' : '✓ Submit Registration'}
+          {isSubmitting ? '⏳ Processing...' : '→ Proceed to Secure Payment'}
         </Button>
       </div>
     </form>

@@ -1,18 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { CreditCard, Lock, CheckCircle, Loader2 } from 'lucide-react';
+import { CreditCard, Lock, CheckCircle, Loader2, Sparkles, School, User } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
 
+interface FeeItem {
+  name?: string;
+  amount?: number;
+}
+
 interface PaymentInfo {
-  reference: string;
-  amount: number;
-  status: string;
+  status?: string;
+  reference?: string;
+  submissionId?: string;
+  registrationNumber?: string;
+  amount?: number;
+  paidAt?: string;
+  paymentType?: string;
+  simulated?: boolean;
+  fees?: FeeItem[];
+  proprietor?: {
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  } | null;
+  school?: {
+    schoolName?: string;
+    lga?: string;
+  } | null;
 }
 
 export const SimulatedPayment = () => {
@@ -23,7 +46,7 @@ export const SimulatedPayment = () => {
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
-  
+
   const [formData, setFormData] = useState({
     cardNumber: '',
     cardHolder: '',
@@ -32,6 +55,12 @@ export const SimulatedPayment = () => {
     cvv: '',
   });
 
+  const proprietorName = useMemo(() => {
+    const p = paymentInfo?.proprietor;
+    if (!p) return '';
+    return [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+  }, [paymentInfo]);
+
   useEffect(() => {
     if (!reference) {
       toast.error('Invalid payment reference');
@@ -39,15 +68,10 @@ export const SimulatedPayment = () => {
       return;
     }
 
-    // Fetch payment info
     const fetchPaymentInfo = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/payments/reference/${reference}`, {
-          headers: {
-            'Authorization': `Bearer ${(localStorage.getItem('admin_token') || localStorage.getItem('token'))}`,
-          },
-        });
+        const response = await fetch(`${API_BASE_URL}/payments/verify/${reference}`);
 
         if (response.ok) {
           const data = await response.json();
@@ -67,9 +91,7 @@ export const SimulatedPayment = () => {
   }, [reference, navigate]);
 
   const formatCardNumber = (value: string) => {
-    // Remove all non-digits
     const digits = value.replace(/\D/g, '');
-    // Add space every 4 digits
     return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
   };
 
@@ -99,23 +121,30 @@ export const SimulatedPayment = () => {
     }
   };
 
+  const fillDemoCard = () => {
+    setFormData({
+      cardNumber: '4242 4242 4242 4242',
+      cardHolder: (proprietorName || 'TEST PROPRIETOR').toUpperCase(),
+      expiryMonth: '12',
+      expiryYear: '30',
+      cvv: '123',
+    });
+    toast.info('Demo card details filled');
+  };
+
   const handlePayment = async () => {
-    // Validate form
     if (!formData.cardNumber || formData.cardNumber.replace(/\s/g, '').length < 16) {
       toast.error('Please enter a valid 16-digit card number');
       return;
     }
-
     if (!formData.cardHolder.trim()) {
       toast.error('Please enter cardholder name');
       return;
     }
-
     if (!formData.expiryMonth || !formData.expiryYear) {
       toast.error('Please enter card expiry date');
       return;
     }
-
     if (!formData.cvv || formData.cvv.length !== 3) {
       toast.error('Please enter a valid 3-digit CVV');
       return;
@@ -123,16 +152,12 @@ export const SimulatedPayment = () => {
 
     try {
       setProcessing(true);
-      
-      // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Call simulated payment endpoint
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       const response = await fetch(`${API_BASE_URL}/payments/simulate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           reference,
           cardNumber: formData.cardNumber.replace(/\s/g, ''),
@@ -142,14 +167,16 @@ export const SimulatedPayment = () => {
 
       if (response.ok) {
         const data = await response.json();
-        toast.success('Payment successful! 🎉');
-        
-        // Redirect to success page
+        const regNo = data?.payment?.registrationNumber;
+        toast.success('Payment successful! 🎉', {
+          description: regNo ? `Registration number: ${regNo}` : 'Your registration is confirmed.',
+        });
+
         setTimeout(() => {
           navigate(`/payment/success?reference=${reference}`);
         }, 1500);
       } else {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({}));
         toast.error(error.message || 'Payment failed');
       }
     } catch (error) {
@@ -171,39 +198,121 @@ export const SimulatedPayment = () => {
     );
   }
 
+  if (paymentInfo?.status === 'success') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 py-8 px-4">
+        <div className="max-w-md mx-auto">
+          <Card className="shadow-lg">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="w-9 h-9 text-green-600" />
+              </div>
+              <CardTitle className="text-2xl">Payment already completed</CardTitle>
+              <CardDescription>
+                This reference has already been paid for successfully.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button className="w-full" size="lg" onClick={() => navigate(`/payment/success?reference=${reference}`)}>
+                View receipt
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/')}>
+                Go to home
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 py-8 px-4">
       <div className="max-w-md mx-auto">
-        {/* Security Badge */}
         <div className="flex items-center justify-center gap-2 mb-6">
           <Lock className="w-5 h-5 text-green-600" />
-          <p className="text-sm text-muted-foreground">
-            Secure Simulated Payment Portal
-          </p>
+          <p className="text-sm text-muted-foreground">Secure Payment Portal</p>
+          <Badge variant="secondary" className="text-[11px]">Test mode</Badge>
         </div>
 
         <Card className="shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Complete Payment</CardTitle>
             <CardDescription>
-              Enter any card details to simulate payment
+              Enter any card details to complete your registration
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Amount Display */}
             {paymentInfo && (
-              <div className="bg-primary/5 p-4 rounded-lg text-center">
-                <p className="text-sm text-muted-foreground mb-1">Amount to Pay</p>
-                <p className="text-3xl font-bold text-primary">
-                  ₦{paymentInfo.amount.toLocaleString()}
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Reference: {reference}
-                </p>
-              </div>
+              <>
+                <div className="bg-primary/5 p-4 rounded-lg text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Amount to Pay</p>
+                  <p className="text-3xl font-bold text-primary">
+                    ₦{(paymentInfo.amount || 0).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2 break-all">
+                    Reference: {reference}
+                  </p>
+                </div>
+
+                {(paymentInfo.fees?.length ?? 0) > 0 && (
+                  <div className="rounded-lg border p-3 space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      Fee breakdown
+                    </p>
+                    {paymentInfo.fees!.map((fee, index) => (
+                      <div key={`${fee.name}-${index}`} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{fee.name}</span>
+                        <span className="font-medium">₦{(fee.amount || 0).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="rounded-lg border p-3 space-y-2 text-sm">
+                  {proprietorName && (
+                    <div className="flex items-start gap-2">
+                      <User className="w-4 h-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="font-medium">{proprietorName}</p>
+                        {paymentInfo.proprietor?.email && (
+                          <p className="text-xs text-muted-foreground">{paymentInfo.proprietor.email}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {paymentInfo.school?.schoolName && (
+                    <div className="flex items-start gap-2">
+                      <School className="w-4 h-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="font-medium">{paymentInfo.school.schoolName}</p>
+                        {paymentInfo.school.lga && (
+                          <p className="text-xs text-muted-foreground">{paymentInfo.school.lga}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {paymentInfo.submissionId && (
+                    <p className="text-xs text-muted-foreground break-all">
+                      Submission ID: {paymentInfo.submissionId}
+                    </p>
+                  )}
+                </div>
+              </>
             )}
 
-            {/* Card Number */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={fillDemoCard}
+              disabled={processing}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Use demo card details
+            </Button>
+
             <div className="space-y-2">
               <Label htmlFor="cardNumber">Card Number</Label>
               <div className="relative">
@@ -218,12 +327,9 @@ export const SimulatedPayment = () => {
                   disabled={processing}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Enter any 16-digit number
-              </p>
+              <p className="text-xs text-muted-foreground">Enter any 16-digit number</p>
             </div>
 
-            {/* Cardholder Name */}
             <div className="space-y-2">
               <Label htmlFor="cardHolder">Cardholder Name</Label>
               <Input
@@ -236,7 +342,6 @@ export const SimulatedPayment = () => {
               />
             </div>
 
-            {/* Expiry and CVV */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Expiry Date</Label>
@@ -278,7 +383,6 @@ export const SimulatedPayment = () => {
               </div>
             </div>
 
-            {/* Payment Button */}
             <Button
               onClick={handlePayment}
               disabled={processing}
@@ -293,14 +397,11 @@ export const SimulatedPayment = () => {
               ) : (
                 <>
                   <CheckCircle className="w-5 h-5 mr-2" />
-                  Pay ₦{paymentInfo ? paymentInfo.amount.toLocaleString() : '0'}
+                  Pay ₦{(paymentInfo?.amount || 0).toLocaleString()}
                 </>
               )}
             </Button>
 
-
-
-            {/* Cancel Button */}
             <Button
               variant="outline"
               onClick={() => navigate('/')}
@@ -312,10 +413,9 @@ export const SimulatedPayment = () => {
           </CardContent>
         </Card>
 
-        {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-xs text-muted-foreground">
-            🔒 Secure payment processing
+            🔒 Secure payments — no real card is charged in test mode
           </p>
         </div>
       </div>

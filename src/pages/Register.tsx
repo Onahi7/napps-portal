@@ -15,7 +15,6 @@ import {
   Step2SchoolInfo, 
   Step3PaymentInfo 
 } from "@/components/registration";
-import { FidelityVirtualAccountModal, FidelityVirtualAccountData } from "@/components/payment/FidelityVirtualAccountModal";
 
 interface RegistrationData {
   personalInfo?: any;
@@ -23,7 +22,7 @@ interface RegistrationData {
   paymentInfo?: any;
   submissionId?: string;
   paymentPending?: boolean;
-  paymentMethod?: 'online' | 'bank_transfer' | 'fidelity';
+  paymentMethod?: 'mock' | 'online' | 'bank_transfer' | 'fidelity';
   registrationNumber?: string;
   timestamp?: number;
 }
@@ -38,8 +37,6 @@ export default function Register() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [resumeId, setResumeId] = useState("");
-  const [showFidelityModal, setShowFidelityModal] = useState(false);
-  const [fidelityVirtualAccount, setFidelityVirtualAccount] = useState<FidelityVirtualAccountData | null>(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
 
@@ -296,147 +293,52 @@ export default function Register() {
   const handleStep3Submit = async (data: any) => {
     setIsSubmitting(true);
     try {
-      const { paymentMethod } = data;
+      const response = await fetch(`${API_BASE_URL}/proprietors/registration/step3`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentMethod: data.paymentMethod || 'mock',
+          submissionId: registrationData.submissionId,
+          finalSubmit: false,
+        }),
+      });
 
-      if (paymentMethod === 'fidelity') {
-        // Handle Fidelity dynamic virtual account transfer
-        const response = await fetch(`${API_BASE_URL}/proprietors/registration/step3`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            paymentMethod: 'fidelity',
-            submissionId: registrationData.submissionId,
-            finalSubmit: false
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || 'Failed to initialize Fidelity virtual account');
-        }
-
-        const result = await response.json();
-
-        const updatedData = {
-          ...registrationData,
-          paymentInfo: data,
-          paymentPending: true,
-          paymentMethod: 'fidelity' as const
-        };
-        
-        saveProgress(updatedData);
-        savePaymentPending('online', registrationData.submissionId!);
-
-        if (result.virtualAccount) {
-          setFidelityVirtualAccount(result.virtualAccount);
-          setShowFidelityModal(true);
-        } else {
-          throw new Error('No virtual account returned from Fidelity gateway');
-        }
-      } else if (paymentMethod === 'online') {
-        // Handle online payment - initiate Paystack payment
-        const response = await fetch(`${API_BASE_URL}/proprietors/registration/step3`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            paymentMethod: 'online',
-            submissionId: registrationData.submissionId,
-            finalSubmit: false // Don't finalize yet, waiting for payment
-          }),
-        });
-
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || 'Failed to initiate payment');
-        }
-
-        const result = await response.json();
-        
-        // Save progress and payment pending status before redirecting
-        const updatedData = {
-          ...registrationData,
-          paymentInfo: data,
-          paymentPending: true,
-          paymentMethod: 'online' as const
-        };
-        
-        saveProgress(updatedData);
-        savePaymentPending('online', registrationData.submissionId!);
-        
-        // Check if simulation mode
-        if (result.payment?.simulationMode) {
-          toast.success('Redirecting to simulated payment...', {
-            description: 'Test payment mode for authorized personnel',
-            duration: 3000
-          });
-          
-          setTimeout(() => {
-            window.location.href = result.payment.paymentUrl;
-          }, 500);
-        }
-        // Redirect to Paystack payment page or initialize payment
-        else if (result.paymentUrl) {
-          toast.success('Redirecting to payment gateway...', {
-            description: 'Your progress has been saved. You can return anytime.',
-            duration: 3000
-          });
-          
-          // Small delay to ensure storage is saved
-          setTimeout(() => {
-            window.location.href = result.paymentUrl;
-          }, 500);
-        } else {
-          throw new Error('Payment initialization failed');
-        }
-      } else {
-        // Handle bank transfer - submit without payment
-        const response = await fetch(`${API_BASE_URL}/proprietors/registration/step3`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            paymentMethod: 'bank_transfer',
-            paymentStatus: 'Pending',
-            submissionId: registrationData.submissionId,
-            finalSubmit: true
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || 'Failed to complete registration');
-        }
-
-        const result = await response.json();
-        
-        // Save payment pending status for bank transfer
-        savePaymentPending('bank_transfer', registrationData.submissionId!);
-        
-        toast.success('Registration submitted successfully!', {
-          description: 'Redirecting to payment instructions...',
-          duration: 3000,
-        });
-        
-        // Redirect to payment status page with bank transfer info
-        setTimeout(() => {
-          navigate(`/payment/status?submissionId=${registrationData.submissionId}&method=bank_transfer`);
-        }, 1000);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to initialize payment');
       }
+
+      const result = await response.json();
+      const paymentUrl = result.payment?.paymentUrl || result.paymentUrl;
+
+      if (!paymentUrl) {
+        throw new Error('Payment initialization failed');
+      }
+
+      const updatedData = {
+        ...registrationData,
+        paymentInfo: data,
+        paymentPending: true,
+        paymentMethod: (data.paymentMethod || 'mock') as RegistrationData['paymentMethod'],
+      };
+
+      saveProgress(updatedData);
+      savePaymentPending('online', registrationData.submissionId!);
+
+      toast.success('Redirecting to secure payment...', {
+        description: 'Your progress has been saved. You can return anytime.',
+        duration: 3000,
+      });
+
+      setTimeout(() => {
+        window.location.href = paymentUrl;
+      }, 500);
     } catch (error: any) {
       toast.error(error.message || 'Failed to complete registration');
       console.error(error);
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleFidelityPaymentSuccess = () => {
-    setShowFidelityModal(false);
-    clearProgress();
-    toast.success('Registration & Payment Confirmed!', {
-      description: 'Your payment via Fidelity Bank has been verified. Welcome to NAPPS Nasarawa!',
-    });
-    navigate(`/payment/status?submissionId=${registrationData.submissionId}`);
   };
 
   const handleBack = () => {
@@ -687,14 +589,6 @@ export default function Register() {
         </div>
       </div>
 
-      {/* Fidelity Dynamic Virtual Account Modal */}
-      <FidelityVirtualAccountModal
-        isOpen={showFidelityModal}
-        onClose={() => setShowFidelityModal(false)}
-        onSuccess={handleFidelityPaymentSuccess}
-        virtualAccount={fidelityVirtualAccount}
-        purposeTitle="School Registration & Annual Dues"
-      />
     </Layout>
   );
 }
