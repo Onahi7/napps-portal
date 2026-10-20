@@ -110,7 +110,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
     },
     {
       title: 'Total Amount Due',
-      value: stats?.totalAmountDue ? `₦${(stats.totalAmountDue / 1000000).toFixed(1)}M` : '₦0',
+      value: stats?.totalAmountDue ? `₦${stats.totalAmountDue.toLocaleString()}` : '₦0',
       icon: DollarSign,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50'

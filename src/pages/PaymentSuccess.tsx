@@ -437,12 +437,12 @@ export const PaymentSuccess = () => {
             )}
           </Button>
           <Button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/')}
             className="flex-1"
             size="lg"
           >
             <Home className="w-5 h-5 mr-2" />
-            Go to Dashboard
+            Back to Home
           </Button>
         </div>
 

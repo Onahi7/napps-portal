@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
 const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
-const EVIDENCE_SESSIONS = ['2021/2022', '2022/2023', '2023/2024', '2024/2025'];
+const EVIDENCE_SESSIONS = ['2025/2026', '2024/2025', '2023/2024', '2022/2023', '2021/2022'];
 
 interface EvidenceItem {
   sessionId: string;

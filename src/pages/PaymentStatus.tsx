@@ -15,6 +15,7 @@ export default function PaymentStatus() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<PaymentStatus>('verifying');
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
+  const [paymentReference, setPaymentReference] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
@@ -35,7 +36,14 @@ export default function PaymentStatus() {
           if (response.ok) {
             const data = await response.json();
             setPaymentDetails(data);
-            setStatus(['success', 'completed'].includes(data.status) ? 'success' : 'failed');
+            setPaymentReference(reference);
+            setStatus(
+              ['success', 'completed'].includes(data.status)
+                ? 'success'
+                : ['pending', 'processing'].includes(data.status)
+                  ? 'pending_verification'
+                  : 'failed',
+            );
           } else {
             setStatus('failed');
           }
@@ -43,8 +51,18 @@ export default function PaymentStatus() {
           const response = await fetch(`${API_BASE_URL}/proprietors/registration/${submissionId}`);
           if (response.ok) {
             const data = await response.json();
-            setPaymentDetails(data);
-            setStatus('pending_verification');
+            const proprietor = data.proprietor || {};
+            const ref = proprietor.reference || null;
+            setPaymentDetails({
+              ...data,
+              amount: proprietor.totalAmountDue > 0 ? proprietor.totalAmountDue : undefined,
+            });
+            setPaymentReference(ref);
+            if (proprietor.paymentStatus === 'Paid' && ref) {
+              navigate(`/payment/success?reference=${ref}`, { replace: true });
+            } else {
+              setStatus('pending_verification');
+            }
           } else {
             setStatus('failed');
           }
@@ -70,7 +88,7 @@ export default function PaymentStatus() {
     verifying: 'Verifying payment',
     success: 'Payment successful',
     failed: 'Payment failed',
-    pending_verification: 'Registration submitted',
+    pending_verification: 'Payment not completed',
   };
 
   const descriptionByStatus: Record<PaymentStatus, string> = {
@@ -78,7 +96,7 @@ export default function PaymentStatus() {
     verifying: 'Please wait while we confirm your registration payment.',
     success: 'Your registration payment has been completed successfully.',
     failed: 'We could not verify this payment.',
-    pending_verification: 'Your registration is waiting for bank transfer verification.',
+    pending_verification: 'Your registration has been saved. Complete your payment to finish registering.',
   };
 
   const renderLoadingCard = () => (
@@ -155,9 +173,9 @@ export default function PaymentStatus() {
         <div className="portal-panel-muted border border-green-200 p-4">
           <h3 className="mb-2 font-semibold text-green-900">What's next</h3>
           <ul className="space-y-2 text-sm text-green-800">
-            <li>A confirmation email has been sent to your registered email address.</li>
-            <li>Your registration is now under review by NAPPS Nasarawa administration.</li>
-            <li>You will be notified once your registration is approved.</li>
+            <li>Your payment has been confirmed and recorded.</li>
+            <li>Your registration status has been updated automatically.</li>
+            <li>Keep your payment reference for future enquiries.</li>
           </ul>
         </div>
 
@@ -182,9 +200,9 @@ export default function PaymentStatus() {
             <Clock className="h-12 w-12 text-white" />
           </div>
         </div>
-        <CardTitle className="text-center text-2xl text-amber-900">Registration Submitted</CardTitle>
+        <CardTitle className="text-center text-2xl text-amber-900">Payment Not Completed</CardTitle>
         <CardDescription className="text-center text-amber-700">
-          Your registration is pending payment verification.
+          Your registration has been saved. Complete your payment to finish registering.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -214,13 +232,12 @@ export default function PaymentStatus() {
         </Alert>
 
         <div className="portal-panel-muted border border-amber-200 p-4">
-          <h3 className="mb-2 font-semibold text-amber-900">Next steps for bank transfer</h3>
-          <ol className="ml-4 list-decimal space-y-2 text-sm text-amber-800">
-            <li>Make payment to the NAPPS Nasarawa State account.</li>
-            <li>Keep your payment receipt or proof of transfer.</li>
-            <li>Contact NAPPS admin with your submission ID and payment proof.</li>
-            <li>Admin will verify and approve your registration.</li>
-          </ol>
+          <h3 className="mb-2 font-semibold text-amber-900">What to do next</h3>
+          <p className="text-sm text-amber-800">
+            {paymentReference
+              ? 'Your registration is saved. Continue to the secure payment page to complete your dues payment.'
+              : 'Your registration is saved. Return to the registration page to continue from where you stopped.'}
+          </p>
         </div>
 
         <Alert className="border-blue-200 bg-blue-50">
@@ -234,9 +251,18 @@ export default function PaymentStatus() {
           <Button onClick={() => navigate('/')} variant="outline" className="flex-1">
             Go to home
           </Button>
-          <Button onClick={() => navigate(`/registration/status?submissionId=${submissionId}`)} className="flex-1">
-            Check status later
-          </Button>
+          {paymentReference ? (
+            <Button
+              onClick={() => navigate(`/payment/simulate?reference=${paymentReference}`)}
+              className="flex-1"
+            >
+              Complete payment
+            </Button>
+          ) : (
+            <Button onClick={() => navigate('/register')} className="flex-1">
+              Continue registration
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -292,10 +318,10 @@ export default function PaymentStatus() {
             eyebrow="Registration Payment"
             title={titleByStatus[status]}
             description={descriptionByStatus[status]}
-            badge={reference ? 'Online payment' : submissionId ? 'Bank transfer' : 'Unknown'}
+            badge={paymentReference ? 'Online payment' : submissionId ? 'Registration' : 'Unknown'}
             icon={status === 'success' ? CheckCircle2 : status === 'pending_verification' ? Clock : XCircle}
             stats={[
-              { label: 'Reference', value: reference || 'Not provided', helper: 'Gateway payment reference.' },
+              { label: 'Reference', value: paymentReference || 'Not provided', helper: 'Gateway payment reference.' },
               { label: 'Submission', value: submissionId || 'Not provided', helper: 'Used to resume or check later.' },
             ]}
           >

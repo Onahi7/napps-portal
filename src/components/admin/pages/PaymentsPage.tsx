@@ -236,6 +236,54 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
     fetchPaymentsData(pagination.page, pagination.limit);
   };
 
+  const handleVerifyPayment = async (payment: any) => {
+    if (!payment.reference) {
+      toast.error('This payment has no reference to verify');
+      return;
+    }
+    if (!confirm(`Mark payment ${payment.reference} as successful?`)) return;
+    try {
+      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments/simulate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference: payment.reference }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'Failed to verify payment');
+      toast.success(data.message || 'Payment verified');
+      handleRefresh();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to verify payment');
+    }
+  };
+
+  const handleRejectPayment = async (payment: any) => {
+    if (!confirm(`Reject payment ${payment.reference}?`)) return;
+    try {
+      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments/${payment._id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'failed' }),
+      });
+      if (!response.ok) throw new Error('Failed to reject payment');
+      toast.success('Payment rejected');
+      handleRefresh();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to reject payment');
+    }
+  };
+
+  const handleViewReceipt = (payment: any) => {
+    if (!payment.reference) {
+      toast.error('This payment has no reference');
+      return;
+    }
+    window.open(`/payment/success?reference=${encodeURIComponent(payment.reference)}`, '_blank');
+  };
+
   // Handle search with client-side filtering for immediate feedback
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -674,17 +722,22 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>View Receipt</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewReceipt(payment)}>
+                              View Receipt
+                            </DropdownMenuItem>
                             {payment.status === 'pending' && (
                               <>
-                                <DropdownMenuItem>Verify Payment</DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-600">
+                                <DropdownMenuItem onClick={() => handleVerifyPayment(payment)}>
+                                  Verify Payment
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-red-600"
+                                  onClick={() => handleRejectPayment(payment)}
+                                >
                                   Reject Payment
                                 </DropdownMenuItem>
                               </>
                             )}
-                            <DropdownMenuItem>Send Notification</DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-red-600"
                               onClick={async () => {

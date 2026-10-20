@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Loader2, User, School, DollarSign, GraduationCap } from "lucide-react";
+import { ArrowLeft, Save, Loader2, User, School, DollarSign, GraduationCap, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 interface Proprietor {
@@ -110,6 +110,8 @@ export default function ProprietorDetailPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingEvidence, setUploadingEvidence] = useState(false);
+  const [evidenceSession, setEvidenceSession] = useState('2025/2026');
   const [proprietor, setProprietor] = useState<Proprietor | null>(null);
   const [enrollmentData, setEnrollmentData] = useState<EnrollmentData>({
     kg1Male: 0,
@@ -261,6 +263,33 @@ export default function ProprietorDetailPage() {
 
   const calculateTotal = () => {
     return Object.values(enrollmentData).reduce((sum, val) => sum + val, 0);
+  };
+
+  const handleUploadEvidence = async (file: File) => {
+    try {
+      setUploadingEvidence(true);
+      const token = localStorage.getItem('admin_token');
+      const form = new FormData();
+      form.append('file', file);
+      form.append('proprietorId', id);
+      form.append('sessionId', evidenceSession);
+      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/proprietors/registration/evidence`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: form,
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to upload evidence');
+      }
+      toast.success(`Evidence for ${evidenceSession} uploaded successfully!`);
+      await fetchProprietor();
+    } catch (error: any) {
+      console.error('Error uploading evidence:', error);
+      toast.error(error.message || 'Failed to upload evidence');
+    } finally {
+      setUploadingEvidence(false);
+    }
   };
 
   if (loading) {
@@ -753,6 +782,38 @@ export default function ProprietorDetailPage() {
                 ) : (
                   <p className="text-sm text-muted-foreground">No payment evidence uploaded.</p>
                 )}
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Select value={evidenceSession} onValueChange={setEvidenceSession}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Session" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['2025/2026', '2024/2025', '2023/2024', '2022/2023', '2021/2022'].map((session) => (
+                        <SelectItem key={session} value={session}>{session}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+                    {uploadingEvidence ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {uploadingEvidence ? 'Uploading…' : 'Upload evidence'}
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".jpg,.jpeg,.png,.webp,.pdf"
+                      disabled={uploadingEvidence}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadEvidence(file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
 
               <div className="pt-4 border-t">

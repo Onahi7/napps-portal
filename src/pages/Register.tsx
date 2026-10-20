@@ -61,7 +61,9 @@ export default function Register() {
             action: {
               label: 'Check Status',
               onClick: () => {
-                if (pendingData.paymentMethod === 'online') {
+                if (pendingData.reference) {
+                  navigate(`/payment/simulate?reference=${pendingData.reference}`);
+                } else if (pendingData.paymentMethod === 'online') {
                   navigate(`/payment/status?submissionId=${parsed.submissionId}`);
                 } else {
                   navigate(`/payment/status?submissionId=${parsed.submissionId}&method=bank_transfer`);
@@ -94,11 +96,12 @@ export default function Register() {
   };
 
   // Save payment pending status
-  const savePaymentPending = (paymentMethod: 'online' | 'bank_transfer', submissionId: string) => {
+  const savePaymentPending = (paymentMethod: 'online' | 'bank_transfer', submissionId: string, reference?: string) => {
     try {
       const pendingData = {
         paymentMethod,
         submissionId,
+        reference,
         timestamp: Date.now()
       };
       localStorage.setItem(PAYMENT_PENDING_KEY, JSON.stringify(pendingData));
@@ -323,7 +326,7 @@ export default function Register() {
       };
 
       saveProgress(updatedData);
-      savePaymentPending('online', registrationData.submissionId!);
+      savePaymentPending('online', registrationData.submissionId!, reference);
 
       toast.success('Redirecting to secure payment...', {
         description: 'Your progress has been saved. You can return anytime.',
