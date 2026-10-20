@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { CameraCapture } from '@/components/ui/camera-capture';
 import { NASARAWA_LGAS, NasarawaLga } from '@/lib/nasarawaLgas';
 import { MapPin, Navigation, School, Users, ChevronDown, ChevronUp, CheckCircle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
@@ -34,7 +33,7 @@ const step2Schema = z.object({
   ownership: z.enum(['Individual(s)', 'Sole', 'Partnership', 'Corporate', 'Community', 'Religious Organization', 'Other']).optional(),
   yearOfEstablishment: z.number().min(1900).max(2100).optional(),
   yearOfApproval: z.number().min(1900).max(2100).optional(),
-  cacNumber: z.string().optional(),
+  moeRegistrationNumber: z.string().optional(),
   nnsuceTimesWritten: z.string().optional(),
   nnsucePupilsCount: z.number().min(0, 'Cannot be negative').optional(),
   registrationEvidence: z.string().optional(),
@@ -158,7 +157,9 @@ export const Step2SchoolInfo: React.FC<Step2SchoolInfoProps> = ({
     if (data.lga && NASARAWA_LGAS.includes(data.lga as NasarawaLga)) {
       setValue('lga', data.lga as NasarawaLga, { shouldValidate: true });
     }
-    if (data.cacNumber) setValue('cacNumber', data.cacNumber);
+    if (data.moeRegistrationNumber || data.cacNumber) {
+      setValue('moeRegistrationNumber', data.moeRegistrationNumber || data.cacNumber);
+    }
     if (data.yearOfEstablishment) setValue('yearOfEstablishment', Number(data.yearOfEstablishment));
     if (data.yearOfApproval) setValue('yearOfApproval', Number(data.yearOfApproval));
     if (data.typeOfSchool) setValue('typeOfSchool', data.typeOfSchool as any);
@@ -185,7 +186,7 @@ export const Step2SchoolInfo: React.FC<Step2SchoolInfoProps> = ({
               AI Smart School Document Scanner
               <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">Fast Auto-Fill</span>
             </h4>
-            <p className="text-xs text-slate-600">Scan your school's approval letter or CAC document to auto-fill identity and category data.</p>
+            <p className="text-xs text-slate-600">Scan your school's approval letter to auto-fill identity and category data.</p>
           </div>
         </div>
         <Button 
@@ -379,13 +380,13 @@ export const Step2SchoolInfo: React.FC<Step2SchoolInfoProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="cacNumber" className="text-sm font-medium">
-              CAC Registration / RC Number <span className="text-slate-400 text-xs">(optional)</span>
+            <Label htmlFor="moeRegistrationNumber" className="text-sm font-medium">
+              MoE Registration Number <span className="text-slate-400 text-xs">(optional)</span>
             </Label>
             <Input
-              id="cacNumber"
-              {...register('cacNumber')}
-              placeholder="e.g. RC 145920 or BN 284910"
+              id="moeRegistrationNumber"
+              {...register('moeRegistrationNumber')}
+              placeholder="e.g. MOE/NS/ED/2021/045"
               className="h-11"
             />
           </div>
@@ -511,22 +512,6 @@ export const Step2SchoolInfo: React.FC<Step2SchoolInfoProps> = ({
             )}
           </div>
         </div>
-      </div>
-
-      {/* 4. Document / Certificate Evidence (Optional) */}
-      <div className="space-y-3">
-        <div className="border-b border-slate-200 pb-2">
-          <h3 className="text-lg font-bold text-slate-900">Registration Document (Optional)</h3>
-          <p className="text-xs text-slate-500">Upload approval letter, CAC document, or school certificate if available</p>
-        </div>
-
-        <CameraCapture
-          label="Approval / Certificate Photograph"
-          value={watch('registrationEvidencePhoto') || ''}
-          onChange={(value) => setValue('registrationEvidencePhoto', value || '')}
-          maxSizeMB={5}
-          folder="napps/proprietors/documents"
-        />
       </div>
 
       {/* Action Buttons */}

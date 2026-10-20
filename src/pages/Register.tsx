@@ -548,6 +548,7 @@ export default function Register() {
                 {currentStep === 3 && (
                   <Step3PaymentInfo
                     initialData={registrationData.paymentInfo}
+                    submissionId={registrationData.submissionId}
                     onSubmit={handleStep3Submit}
                     onBack={handleBack}
                     isSubmitting={isSubmitting}

@@ -32,6 +32,24 @@ interface Proprietor {
   typeOfSchool?: string;
   categoryOfSchool?: string;
   ownership?: string;
+  lga?: string;
+  chapter?: string;
+  schoolCode?: string;
+  moeRegistrationNumber?: string;
+  cacNumber?: string;
+  registrationEvidencePhoto?: string;
+  paymentEvidence?: {
+    sessionId: string;
+    fileName: string;
+    url: string;
+    uploadedAt?: string;
+  }[];
+  duesPaymentHistory?: {
+    sessionId?: string;
+    amountPaid?: number;
+    paymentDate?: string;
+    receiptNumber?: string;
+  }[];
   registrationStatus: string;
   approvalStatus: string;
   nappsRegistered?: string;
@@ -389,6 +407,23 @@ export default function ProprietorDetailPage() {
                 <Label className="text-muted-foreground">Ownership</Label>
                 <p className="text-lg font-medium">{proprietor.ownership || 'N/A'}</p>
               </div>
+              <div>
+                <Label className="text-muted-foreground">MoE Registration Number</Label>
+                <p className="text-lg font-medium">{proprietor.moeRegistrationNumber || 'N/A'}</p>
+              </div>
+              {proprietor.registrationEvidencePhoto && (
+                <div>
+                  <Label className="text-muted-foreground">School Approval Evidence</Label>
+                  <a
+                    href={proprietor.registrationEvidencePhoto}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-lg font-medium text-primary underline"
+                  >
+                    View document
+                  </a>
+                </div>
+              )}
             </div>
           </Card>
         </TabsContent>
@@ -689,6 +724,35 @@ export default function ProprietorDetailPage() {
                   value={paymentData.paymentNote || ''}
                   onChange={(e) => handlePaymentChange('paymentNote', e.target.value)}
                 />
+              </div>
+
+              <div className="pt-4 border-t space-y-2">
+                <p className="text-sm font-semibold">Previous Dues Payment Evidence</p>
+                {proprietor.paymentEvidence?.length ? (
+                  <div className="space-y-2">
+                    {proprietor.paymentEvidence.map((item) => (
+                      <div
+                        key={`${item.sessionId}-${item.url}`}
+                        className="flex items-center justify-between gap-2 rounded-md border p-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{item.sessionId || 'Session not specified'}</p>
+                          <p className="text-xs text-muted-foreground truncate">{item.fileName}</p>
+                        </div>
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm text-primary underline shrink-0"
+                        >
+                          View
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No payment evidence uploaded.</p>
+                )}
               </div>
 
               <div className="pt-4 border-t">

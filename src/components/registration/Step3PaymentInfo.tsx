@@ -7,9 +7,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2, Info, CreditCard } from 'lucide-react';
+import { CheckCircle2, Info, CreditCard, Upload, FileCheck2, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+
+const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+const EVIDENCE_SESSIONS = ['2021/2022', '2022/2023', '2023/2024', '2024/2025'];
+
+interface EvidenceItem {
+  sessionId: string;
+  fileName: string;
+  fileType?: string;
+  fileSize?: number;
+  url: string;
+  key?: string;
+  uploadedAt?: string;
+}
 
 const step3Schema = z.object({
   paymentMethod: z.enum(['mock', 'online', 'fidelity', 'bank_transfer']),
@@ -31,6 +45,7 @@ interface FeeItem {
 
 interface Step3PaymentInfoProps {
   initialData?: Partial<Step3FormData>;
+  submissionId?: string;
   onSubmit: (data: Omit<Step3FormData, 'confirmAccuracy'>) => void;
   onBack: () => void;
   isSubmitting: boolean;
@@ -38,6 +53,7 @@ interface Step3PaymentInfoProps {
 
 const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
   initialData,
+  submissionId,
   onSubmit,
   onBack,
   isSubmitting
@@ -45,6 +61,8 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
   const [fees, setFees] = useState<FeeItem[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [loadingFees, setLoadingFees] = useState(true);
+  const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
+  const [uploadingSession, setUploadingSession] = useState<string | null>(null);
 
   const {
     handleSubmit,
@@ -66,7 +84,6 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
   useEffect(() => {
     const fetchFees = async () => {
       try {
-        const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
         const response = await fetch(`${API_BASE_URL}/fees/active`);
         
         if (response.ok) {
@@ -88,6 +105,58 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
 
     fetchFees();
   }, []);
+
+  useEffect(() => {
+    if (!submissionId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/proprietors/registration/${submissionId}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        const list = data?.proprietor?.paymentEvidence;
+        if (!cancelled && Array.isArray(list)) setEvidence(list);
+      } catch {
+        // Evidence is optional; ignore load failures.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [submissionId]);
+
+  const uploadEvidence = async (sessionId: string, file: File) => {
+    if (!submissionId) {
+      toast.error('Complete step 1 before uploading evidence.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File must be 5MB or smaller.');
+      return;
+    }
+    setUploadingSession(sessionId);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('submissionId', submissionId);
+      formData.append('sessionId', sessionId);
+      const response = await fetch(`${API_BASE_URL}/proprietors/registration/evidence`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to upload evidence');
+      }
+      const list = Array.isArray(data.paymentEvidence) ? data.paymentEvidence : [];
+      setEvidence(list);
+      toast.success(`Receipt for ${sessionId} uploaded.`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload evidence');
+    } finally {
+      setUploadingSession(null);
+    }
+  };
 
   const handleFormSubmit = (data: Step3FormData) => {
     // Remove confirmAccuracy before sending to backend
@@ -144,6 +213,81 @@ const Step3PaymentInfo: React.FC<Step3PaymentInfoProps> = ({
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Previous Payment Evidence */}
+      <Card>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <FileCheck2 className="w-5 h-5" />
+            Previous Dues Payments
+            <Badge variant="outline" className="text-[11px] font-semibold">Optional</Badge>
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            If you have paid dues in earlier sessions, upload your receipt for each session.
+            Accepted: JPG, PNG, WEBP or PDF up to 5MB.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 space-y-1">
+          {EVIDENCE_SESSIONS.map((session) => {
+            const uploaded = evidence.find((item) => item.sessionId === session);
+            const inputId = `payment-evidence-${session.replace(/\//g, '-')}`;
+            const busy = uploadingSession === session;
+            return (
+              <div
+                key={session}
+                className="flex items-center justify-between gap-3 py-3 border-b last:border-0"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{session}</p>
+                  {uploaded ? (
+                    <a
+                      href={uploaded.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-emerald-700 underline truncate block max-w-[180px] sm:max-w-xs"
+                    >
+                      {uploaded.fileName || 'View receipt'}
+                    </a>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No receipt uploaded</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {uploaded && <FileCheck2 className="w-4 h-4 text-emerald-600" />}
+                  <input
+                    id={inputId}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,.pdf"
+                    className="hidden"
+                    disabled={busy}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) void uploadEvidence(session, file);
+                      event.currentTarget.value = '';
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => document.getElementById(inputId)?.click()}
+                  >
+                    {busy ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-1" />
+                        {uploaded ? 'Replace' : 'Upload'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 
