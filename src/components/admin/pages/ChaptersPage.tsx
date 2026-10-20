@@ -94,7 +94,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
           sortOrder: 'desc'
         });
         
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors?${params.toString()}`, {
+        const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/proprietors?${params.toString()}`, {
           headers: {
             'Authorization': `Bearer ${authToken}`,
           },
@@ -223,7 +223,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
 
     setSaving(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors/chapters/bulk-update`, {
+      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/proprietors/chapters/bulk-update`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -245,7 +245,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
       const result = await response.json();
       
       // Refresh proprietors list to get updated data
-      const refreshResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors?page=1&limit=1000&sortBy=createdAt&sortOrder=desc`, {
+      const refreshResponse = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/proprietors?page=1&limit=1000&sortBy=createdAt&sortOrder=desc`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
         },
@@ -282,7 +282,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
   const handleIndividualChapterUpdate = async (proprietorId: string, chapters: string[]) => {
     setSaving(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors/${proprietorId}/chapters`, {
+      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/proprietors/${proprietorId}/chapters`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${authToken}`,

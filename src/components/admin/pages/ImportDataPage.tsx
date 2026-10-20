@@ -66,7 +66,7 @@ export function ImportDataPage({ authToken }: ImportDataPageProps) {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proprietors/import/csv`, {
+      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/proprietors/import/csv`, {
         method: 'POST',
         body: formData,
         headers: {

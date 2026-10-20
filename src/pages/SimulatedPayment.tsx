@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { CreditCard, Lock, CheckCircle, Loader2, Sparkles, School, User } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
+const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
 
 interface FeeItem {
   name?: string;

@@ -51,7 +51,7 @@ import { exportToCSV, exportTableToPDF } from '@/lib/export-utils';
 import { NAPPS_CHAPTERS } from '@/constants/napps-chapters';
 import { toast } from 'sonner';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://napps-backend-5ty7.onrender.com/api/v1';
+const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
 
 interface Proprietor {
   _id: string;

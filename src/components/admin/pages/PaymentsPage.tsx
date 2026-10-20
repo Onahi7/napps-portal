@@ -146,13 +146,13 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
       // }
 
       const [paymentsRes, statsRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/payments?${queryParams}`, {
+        fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments?${queryParams}`, {
           headers: { 
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           }
         }),
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/stats`, {
+        fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments/stats`, {
           headers: { 
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
@@ -266,7 +266,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
       }
 
       // Fetch all payments
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments?${queryParams}`, {
+      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments?${queryParams}`, {
         headers: { 
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -690,7 +690,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                               onClick={async () => {
                                 if (confirm('Are you sure you want to delete this payment? This action cannot be undone.')) {
                                   try {
-                                    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/${payment._id}`, {
+                                    const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments/${payment._id}`, {
                                       method: 'DELETE',
                                       headers: { 
                                         'Authorization': `Bearer ${authToken}`,
