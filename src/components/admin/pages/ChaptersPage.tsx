@@ -465,7 +465,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
         </CardHeader>
         <CardContent>
           {/* Search and Filters */}
-          <div className="flex gap-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
@@ -476,7 +476,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -487,7 +487,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
               </SelectContent>
             </Select>
             <Select value={chapterFilter} onValueChange={setChapterFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Filter by chapter" />
               </SelectTrigger>
               <SelectContent>
@@ -503,7 +503,7 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
           </div>
 
           {/* Table */}
-          <div className="rounded-2xl border">
+          <div className="rounded-2xl border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -563,8 +563,8 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
 
           {/* Pagination Controls */}
           {!loading && filteredProprietors.length > 0 && (
-            <div className="flex items-center justify-between mt-6">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
+              <div className="flex flex-wrap items-center gap-4">
                 <p className="text-sm text-gray-600">
                   Showing {startIndex + 1} to {Math.min(endIndex, filteredProprietors.length)} of {filteredProprietors.length} results
                 </p>

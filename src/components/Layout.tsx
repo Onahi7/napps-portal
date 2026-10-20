@@ -11,7 +11,8 @@ import {
   QrCode, 
   LogIn, 
   Search,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCw
 } from "lucide-react";
 import nappsLogo from "@/assets/napps-logo.png";
 
@@ -29,6 +30,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   const navLinks = [
     { name: "Find Record / Pay Dues", path: "/", icon: Search },
     { name: "School Registration", path: "/register", icon: Users },
+    { name: "Renew Annual Dues", path: "/renew", icon: RefreshCw },
     { name: "Verify School", path: "/verify", icon: QrCode },
   ];
 

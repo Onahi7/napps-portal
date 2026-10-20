@@ -491,11 +491,11 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
         <CardHeader>
           <CardTitle>Levy Payment Transactions</CardTitle>
           <CardDescription>
-            {loading ? 'Loading...' : `Showing ${Math.min(pagination.limit, filteredPayments.length)} of ${pagination.total} levy payments`}
+            {loading ? 'Loading...' : `Showing ${pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1}-${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total} levy payments`}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
@@ -506,7 +506,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -517,7 +517,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
               </SelectContent>
             </Select>
             <Select value={chapterFilter} onValueChange={setChapterFilter}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="Chapter" />
               </SelectTrigger>
               <SelectContent>
@@ -533,7 +533,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
           </div>
 
           {/* Table */}
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -635,8 +635,8 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-6">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
+            <div className="flex flex-wrap items-center gap-4">
               <p className="text-sm text-gray-600">
                 Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
               </p>

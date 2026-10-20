@@ -547,7 +547,7 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -559,7 +559,7 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
               </SelectContent>
             </Select>
             <Select value={chapterFilter} onValueChange={setChapterFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by chapter" />
               </SelectTrigger>
               <SelectContent>
@@ -654,7 +654,7 @@ export function ProprietorsPage({ authToken }: ProprietorsPageProps) {
           )}
 
           {/* Table */}
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

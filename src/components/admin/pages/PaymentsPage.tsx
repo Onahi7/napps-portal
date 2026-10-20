@@ -300,10 +300,9 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
     try {
       toast.info('Preparing export... This may take a moment.');
 
-      // Build query parameters to fetch ALL payments with filters
+      // Build query parameters to fetch ALL payments with filters (API caps at 200/page)
       const queryParams = new URLSearchParams({
-        page: '1',
-        limit: '10000', // Fetch up to 10,000 records
+        limit: '200',
         sortBy: 'createdAt',
         sortOrder: 'desc',
       });
@@ -313,20 +312,27 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
         queryParams.append('status', statusFilter);
       }
 
-      // Fetch all payments
-      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments?${queryParams}`, {
-        headers: { 
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
+      const allPayments: Payment[] = [];
+      let page = 1;
+      let pages = 1;
+      do {
+        queryParams.set('page', String(page));
+        const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments?${queryParams}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch payments for export');
         }
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch payments for export');
-      }
-
-      const data: PaymentsResponse = await response.json();
-      const allPayments = data.data || [];
+        const data: PaymentsResponse = await response.json();
+        allPayments.push(...(data.data || []));
+        pages = data.pagination?.pages ?? page;
+        page += 1;
+      } while (page <= pages && allPayments.length < 10000);
 
       // Apply client-side filters (search and chapter)
       const dataToExport = allPayments.filter((payment) => {
@@ -589,11 +595,11 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
         <CardHeader>
           <CardTitle>Payment Transactions</CardTitle>
           <CardDescription>
-            {loading ? 'Loading...' : `Showing ${Math.min(pagination.limit, filteredPayments.length)} of ${pagination.total} total transactions`}
+            {loading ? 'Loading...' : `Showing ${pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1}-${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total} total transactions`}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
@@ -604,7 +610,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -615,7 +621,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
               </SelectContent>
             </Select>
             <Select value={chapterFilter} onValueChange={setChapterFilter}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="Filter by chapter" />
               </SelectTrigger>
               <SelectContent>
@@ -629,7 +635,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
               </SelectContent>
             </Select>
             <Select value={methodFilter} onValueChange={setMethodFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Method" />
               </SelectTrigger>
               <SelectContent>
@@ -641,7 +647,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
           </div>
 
           {/* Payments Table */}
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -777,8 +783,8 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-6">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
+            <div className="flex flex-wrap items-center gap-4">
               <p className="text-sm text-gray-600">
                 Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
               </p>
@@ -853,7 +859,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-lg">
               <div>
                 <p className="font-semibold text-gray-900">Base Registration Fee</p>
                 <p className="text-sm text-gray-600">Standard registration fee for all proprietors</p>
@@ -863,7 +869,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                 <Badge variant="outline" className="mt-1">Active</Badge>
               </div>
             </div>
-            <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-lg bg-gray-50">
               <div>
                 <p className="font-semibold text-gray-700">Platform Fee</p>
                 <p className="text-sm text-gray-600">Additional processing fee (2%)</p>

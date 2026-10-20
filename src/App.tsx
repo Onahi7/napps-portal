@@ -17,6 +17,7 @@ import { PaymentSuccess } from "./pages/PaymentSuccess";
 import LevyPayment from "./pages/LevyPayment";
 import LevyPaymentVerify from "./pages/LevyPaymentVerify";
 import LevyPaymentDownload from "./pages/LevyPaymentDownload";
+import RenewDues from "./pages/RenewDues";
 import NnsucePortal from "./pages/NnsucePortal";
 import SchoolVerification from "./pages/SchoolVerification";
 import MonitoringDashboards from "./pages/MonitoringDashboards";
@@ -49,6 +50,7 @@ const App = () => (
             } 
           />
           <Route path="/levy-payment" element={<LevyPayment />} />
+          <Route path="/renew" element={<RenewDues />} />
           <Route path="/levy-payment/verify" element={<LevyPaymentVerify />} />
           <Route path="/levy-payment/download" element={<LevyPaymentDownload />} />
           {/* Secured administrative & internal features redirect to /admin */}
