@@ -58,7 +58,7 @@ export default function PaymentStatus() {
               amount: proprietor.totalAmountDue > 0 ? proprietor.totalAmountDue : undefined,
             });
             setPaymentReference(ref);
-            if (proprietor.paymentStatus === 'Paid' && ref) {
+            if (String(proprietor.paymentStatus).toLowerCase() === 'paid' && ref) {
               navigate(`/payment/success?reference=${ref}`, { replace: true });
             } else {
               setStatus('pending_verification');
