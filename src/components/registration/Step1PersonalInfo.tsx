@@ -15,6 +15,7 @@ import { NASARAWA_LGAS, NasarawaLga } from '@/lib/nasarawaLgas';
 import { NAPPS_CHAPTERS } from '@/constants/napps-chapters';
 import { Sparkles } from 'lucide-react';
 import { AiDocumentScannerModal } from './AiDocumentScannerModal';
+import { duesDeclarationSchema } from '@/lib/registrationValidation';
 
 const step1Schema = z.object({
   firstName: z.string().min(2, 'First name is required'),
@@ -30,6 +31,7 @@ const step1Schema = z.object({
   email: z.string().email('Invalid email address'),
   phone: z.string().min(10, 'Phone number is required'),
   chapters: z.array(z.string()).optional().default([]),
+  duesDeclarations: z.array(duesDeclarationSchema).optional().default([]),
   passportPhoto: z.string().optional(),
   nappsRegistered: z.enum(['Not Registered', 'Registered', 'Registered with Certificate']).optional(),
   participationHistory: z.union([z.string(), z.array(z.string())]).optional(),
@@ -113,6 +115,7 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
   });
 
   const nappsRegistered = watch('nappsRegistered');
+  const duesDeclarations = watch('duesDeclarations') || [];
 
   const handleFormSubmit = (data: Step1FormData) => {
     // Convert participation checkboxes to string format
@@ -427,6 +430,30 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
           </Select>
           <p className="text-xs text-muted-foreground mt-1">Select your existing status with the association</p>
         </div>
+
+        <fieldset className="flex flex-col gap-3 rounded-lg border p-4" aria-describedby="dues-declarations-help">
+          <legend className="px-1 text-sm font-semibold">2026/2027 dues already paid (optional)</legend>
+          <p id="dues-declarations-help" className="text-xs text-muted-foreground">
+            Select each level you have already paid for this session. Leave all unchecked if you have not paid.
+            These declarations will be checked by the secretariat; they do not confirm payment or change the amount due.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            {(['national', 'state', 'zonal'] as const).map((level) => (
+              <div key={level} className="flex items-center gap-2">
+                <Checkbox
+                  id={`dues-2026-2027-${level}`}
+                  checked={duesDeclarations.some((entry) => entry.sessionId === '2026/2027' && entry.level === level && entry.paid)}
+                  onCheckedChange={(checked) => {
+                    const other = duesDeclarations.filter((entry) => entry.sessionId !== '2026/2027' || entry.level !== level);
+                    setValue('duesDeclarations', checked === true
+                      ? [...other, { sessionId: '2026/2027', level, paid: true }] : other, { shouldDirty: true });
+                  }}
+                />
+                <Label htmlFor={`dues-2026-2027-${level}`} className="cursor-pointer capitalize">{level} dues paid</Label>
+              </div>
+            ))}
+          </div>
+        </fieldset>
 
         {nappsRegistered !== 'Not Registered' && (
           <div className="space-y-5 p-4 sm:p-5 bg-slate-50/80 rounded-xl border border-slate-200">

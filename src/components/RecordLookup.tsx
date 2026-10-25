@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '@/config/api';
+import { getAcademicSession } from '@/lib/registrationValidation';
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { 
   Search, 
+  AlertCircle,
   Phone, 
   Mail, 
   MapPin, 
@@ -71,12 +73,13 @@ type SearchMode = 'all' | 'school' | 'phone' | 'name' | 'regNo';
 export const RecordLookup = () => {
   
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchMode, setSearchMode] = useState<SearchMode>('all');
+  const [searchTerm, setSearchTerm] = useState(() => new URLSearchParams(window.location.search).get('phone') || '');
+  const [searchMode, setSearchMode] = useState<SearchMode>(() => new URLSearchParams(window.location.search).has('phone') ? 'phone' : 'all');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<ProprietorRecord[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<ProprietorRecord | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [lastSearchedTerm, setLastSearchedTerm] = useState('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [fidelityModalOpen, setFidelityModalOpen] = useState(false);
@@ -623,7 +626,7 @@ export const RecordLookup = () => {
                                 </span>
                               </div>
                               <span className="text-xs text-slate-500 font-mono">
-                                Session 2024/2025
+                                Session {getAcademicSession()}
                               </span>
                             </div>
 

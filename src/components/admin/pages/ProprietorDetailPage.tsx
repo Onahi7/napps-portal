@@ -55,6 +55,7 @@ interface Proprietor {
   approvalStatus: string;
   nappsRegistered?: string;
   participationHistory?: string[];
+  duesDeclarations?: { sessionId: string; level: 'national' | 'state' | 'zonal'; paid: boolean }[];
   clearingStatus: string;
   totalAmountDue?: number;
   paymentMethod?: string;
@@ -757,6 +758,15 @@ export default function ProprietorDetailPage() {
               </div>
 
               <div className="pt-4 border-t space-y-2">
+                <p className="text-sm font-semibold">Declared Dues Payments (Unverified)</p>
+                <p className="text-xs text-muted-foreground">Reported by the proprietor; verify receipts before approving payment.</p>
+                {proprietor.duesDeclarations?.length ? (
+                  <ul className="flex flex-col gap-1 text-sm">
+                    {proprietor.duesDeclarations.filter((entry) => entry.paid).map((entry) => (
+                      <li key={`${entry.sessionId}-${entry.level}`} className="capitalize">{entry.sessionId}: {entry.level} dues declared paid</li>
+                    ))}
+                  </ul>
+                ) : <p className="text-xs text-muted-foreground">No dues payments declared.</p>}
                 <p className="text-sm font-semibold">Previous Dues Payment Evidence</p>
                 {proprietor.paymentEvidence?.length ? (
                   <div className="space-y-2">

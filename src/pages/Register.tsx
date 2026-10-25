@@ -118,15 +118,15 @@ export default function Register() {
   };
 
   // Resume with existing submission ID
-  const handleResumeRegistration = async () => {
-    if (!resumeId.trim()) {
+  const handleResumeRegistration = async (submissionId = resumeId) => {
+    if (!submissionId.trim()) {
       toast.error('Please enter a valid submission ID');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/proprietors/registration/${resumeId}`, {
+      const response = await fetch(`${API_BASE_URL}/proprietors/registration/${encodeURIComponent(submissionId.trim())}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -191,7 +191,7 @@ export default function Register() {
             duration: 8000,
             action: {
               label: 'Find Record',
-              onClick: () => navigate('/verification'),
+              onClick: () => navigate(`/?phone=${encodeURIComponent(data.phone)}`),
             },
           });
           return;
@@ -220,7 +220,7 @@ export default function Register() {
         // Already shown detailed toast above
         return;
       }
-      toast.error('Failed to save personal information');
+      toast.error(error.message || 'Failed to save personal information');
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -381,7 +381,7 @@ export default function Register() {
                     Resume Registration
                   </CardTitle>
                   <CardDescription>
-                    We found a saved registration in progress. Would you like to continue?
+                    {registrationData.submissionId ? 'We found a saved registration in progress. Would you like to continue?' : 'Enter your Submission ID to continue an existing registration.'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -391,11 +391,11 @@ export default function Register() {
                         setShowResumeDialog(false);
                         if (registrationData.submissionId) {
                           setResumeId(registrationData.submissionId);
-                          handleResumeRegistration();
+                          handleResumeRegistration(registrationData.submissionId);
                         }
                       }}
                       className="flex-1"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !registrationData.submissionId}
                     >
                       Continue Saved Registration
                     </Button>
@@ -426,7 +426,7 @@ export default function Register() {
                         className="flex-1"
                       />
                       <Button
-                        onClick={handleResumeRegistration}
+                        onClick={() => handleResumeRegistration()}
                         disabled={isSubmitting || !resumeId.trim()}
                         size="sm"
                       >
@@ -449,7 +449,7 @@ export default function Register() {
                     size="sm"
                     onClick={() => {
                       setResumeId(registrationData.submissionId!);
-                      handleResumeRegistration();
+                      handleResumeRegistration(registrationData.submissionId!);
                     }}
                     disabled={isSubmitting}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs font-semibold"
@@ -537,6 +537,7 @@ export default function Register() {
               <CardContent className="p-4 sm:p-6">
                 {currentStep === 1 && (
                   <Step1PersonalInfo
+                    key={registrationData.submissionId || 'new-registration'}
                     initialData={registrationData.personalInfo}
                     onSubmit={handleStep1Submit}
                     isSubmitting={isSubmitting}

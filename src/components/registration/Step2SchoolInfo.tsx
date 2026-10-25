@@ -11,11 +11,7 @@ import { NASARAWA_LGAS, NasarawaLga } from '@/lib/nasarawaLgas';
 import { MapPin, Navigation, School, Users, ChevronDown, ChevronUp, CheckCircle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { AiDocumentScannerModal } from './AiDocumentScannerModal';
-
-const optionalNumber = z.preprocess(
-  (val) => (val === '' || val === null || val === undefined || (typeof val === 'number' && isNaN(val)) ? undefined : Number(val)),
-  z.number().min(0, 'Cannot be negative').optional()
-);
+import { optionalNumber } from '@/lib/registrationValidation';
 
 const optionalYear = z.preprocess(
   (val) => (val === '' || val === null || val === undefined || (typeof val === 'number' && isNaN(val)) ? undefined : Number(val)),
@@ -458,10 +454,15 @@ export const Step2SchoolInfo: React.FC<Step2SchoolInfoProps> = ({
               id="totalEnrollment"
               type="number"
               {...register('totalEnrollment', { valueAsNumber: true })}
+              min="0"
+              step="1"
+              aria-invalid={Boolean(errors.totalEnrollment)}
+              aria-describedby={errors.totalEnrollment ? 'totalEnrollment-error' : 'totalEnrollment-help'}
               placeholder="e.g. 350"
               className="h-12 text-lg font-bold bg-white"
             />
-            <p className="text-xs text-slate-500">Total boys and girls across all classes</p>
+            <p id="totalEnrollment-help" className="text-xs text-muted-foreground">Total boys and girls across all classes. You can leave this blank and continue.</p>
+            {errors.totalEnrollment && <p id="totalEnrollment-error" role="alert" className="text-xs text-destructive">{errors.totalEnrollment.message}</p>}
           </div>
 
           {/* Optional Class-by-Class Breakdown Toggle */}
