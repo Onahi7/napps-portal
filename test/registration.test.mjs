@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { optionalNumber, duesDeclarationSchema, getAcademicSession } from '../src/lib/registrationValidation.ts';
+import { resolveApiBaseUrl, CLOUDFLARE_API_BASE } from '../src/config/apiBase.ts';
+
+test('retired hosting settings cannot send registration back to Render', () => {
+  for (const value of [undefined, '', 'https://napps-api.dicksonhardy7.workers.dev/api/v1', 'https://napps-backend-5ty7.onrender.com/api/v1/']) {
+    assert.equal(resolveApiBaseUrl(value), CLOUDFLARE_API_BASE);
+  }
+  assert.equal(resolveApiBaseUrl(CLOUDFLARE_API_BASE), CLOUDFLARE_API_BASE);
+  assert.equal(resolveApiBaseUrl('http://localhost:3001/api/v1'), 'http://localhost:3001/api/v1');
+});
 
 test('dues lookup displays the active academic session', () => {
   assert.equal(getAcademicSession(new Date('2026-10-25T12:00:00Z')), '2026/2027');
