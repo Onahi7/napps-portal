@@ -12,7 +12,20 @@ import { MapPin, Navigation, School, Users, ChevronDown, ChevronUp, CheckCircle,
 import { toast } from 'sonner';
 import { AiDocumentScannerModal } from './AiDocumentScannerModal';
 
-const enrollmentFieldSchema = z.number().min(0, 'Cannot be negative').optional();
+const optionalNumber = z.preprocess(
+  (val) => (val === '' || val === null || val === undefined || (typeof val === 'number' && isNaN(val)) ? undefined : Number(val)),
+  z.number().min(0, 'Cannot be negative').optional()
+);
+
+const optionalYear = z.preprocess(
+  (val) => (val === '' || val === null || val === undefined || (typeof val === 'number' && isNaN(val)) ? undefined : Number(val)),
+  z.number().min(1900, 'Year must be after 1900').max(2100, 'Year must be valid').optional()
+);
+
+const optionalCoordinate = z.preprocess(
+  (val) => (val === '' || val === null || val === undefined || (typeof val === 'number' && isNaN(val)) ? undefined : Number(val)),
+  z.number().optional()
+);
 
 const step2Schema = z.object({
   schoolName: z.string().min(3, 'School name is required'),
@@ -26,38 +39,38 @@ const step2Schema = z.object({
       message: 'Select a valid LGA',
     }),
   aeqeoZone: z.string().optional(),
-  gpsLongitude: z.number().optional(),
-  gpsLatitude: z.number().optional(),
+  gpsLongitude: optionalCoordinate,
+  gpsLatitude: optionalCoordinate,
   typeOfSchool: z.enum(['Faith Based', 'Conventional', 'Islamiyah Integrated', 'Secular', 'Other']).optional(),
   categoryOfSchool: z.string().optional(),
   ownership: z.enum(['Individual(s)', 'Sole', 'Partnership', 'Corporate', 'Community', 'Religious Organization', 'Other']).optional(),
-  yearOfEstablishment: z.number().min(1900).max(2100).optional(),
-  yearOfApproval: z.number().min(1900).max(2100).optional(),
+  yearOfEstablishment: optionalYear,
+  yearOfApproval: optionalYear,
   moeRegistrationNumber: z.string().optional(),
   nnsuceTimesWritten: z.string().optional(),
-  nnsucePupilsCount: z.number().min(0, 'Cannot be negative').optional(),
+  nnsucePupilsCount: optionalNumber,
   registrationEvidence: z.string().optional(),
   registrationEvidencePhoto: z.string().optional(),
-  totalEnrollment: z.number().min(0, 'Cannot be negative').optional(),
+  totalEnrollment: optionalNumber,
   
   // All enrollment fields (optional detailed breakdown)
-  kg1Male: enrollmentFieldSchema, kg1Female: enrollmentFieldSchema,
-  kg2Male: enrollmentFieldSchema, kg2Female: enrollmentFieldSchema,
-  eccdMale: enrollmentFieldSchema, eccdFemale: enrollmentFieldSchema,
-  nursery1Male: enrollmentFieldSchema, nursery1Female: enrollmentFieldSchema,
-  nursery2Male: enrollmentFieldSchema, nursery2Female: enrollmentFieldSchema,
-  primary1Male: enrollmentFieldSchema, primary1Female: enrollmentFieldSchema,
-  primary2Male: enrollmentFieldSchema, primary2Female: enrollmentFieldSchema,
-  primary3Male: enrollmentFieldSchema, primary3Female: enrollmentFieldSchema,
-  primary4Male: enrollmentFieldSchema, primary4Female: enrollmentFieldSchema,
-  primary5Male: enrollmentFieldSchema, primary5Female: enrollmentFieldSchema,
-  primary6Male: enrollmentFieldSchema, primary6Female: enrollmentFieldSchema,
-  jss1Male: enrollmentFieldSchema, jss1Female: enrollmentFieldSchema,
-  jss2Male: enrollmentFieldSchema, jss2Female: enrollmentFieldSchema,
-  jss3Male: enrollmentFieldSchema, jss3Female: enrollmentFieldSchema,
-  ss1Male: enrollmentFieldSchema, ss1Female: enrollmentFieldSchema,
-  ss2Male: enrollmentFieldSchema, ss2Female: enrollmentFieldSchema,
-  ss3Male: enrollmentFieldSchema, ss3Female: enrollmentFieldSchema,
+  kg1Male: optionalNumber, kg1Female: optionalNumber,
+  kg2Male: optionalNumber, kg2Female: optionalNumber,
+  eccdMale: optionalNumber, eccdFemale: optionalNumber,
+  nursery1Male: optionalNumber, nursery1Female: optionalNumber,
+  nursery2Male: optionalNumber, nursery2Female: optionalNumber,
+  primary1Male: optionalNumber, primary1Female: optionalNumber,
+  primary2Male: optionalNumber, primary2Female: optionalNumber,
+  primary3Male: optionalNumber, primary3Female: optionalNumber,
+  primary4Male: optionalNumber, primary4Female: optionalNumber,
+  primary5Male: optionalNumber, primary5Female: optionalNumber,
+  primary6Male: optionalNumber, primary6Female: optionalNumber,
+  jss1Male: optionalNumber, jss1Female: optionalNumber,
+  jss2Male: optionalNumber, jss2Female: optionalNumber,
+  jss3Male: optionalNumber, jss3Female: optionalNumber,
+  ss1Male: optionalNumber, ss1Female: optionalNumber,
+  ss2Male: optionalNumber, ss2Female: optionalNumber,
+  ss3Male: optionalNumber, ss3Female: optionalNumber,
 });
 
 type Step2FormData = z.infer<typeof step2Schema> & { lga?: NasarawaLga };
@@ -439,7 +452,7 @@ export const Step2SchoolInfo: React.FC<Step2SchoolInfoProps> = ({
         <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-5">
           <div className="max-w-xs space-y-2">
             <Label htmlFor="totalEnrollment" className="text-base font-bold text-slate-900">
-              Total Student Population <span className="text-red-500">*</span>
+              Total Student Population <span className="text-slate-400 text-xs font-normal">(optional)</span>
             </Label>
             <Input
               id="totalEnrollment"

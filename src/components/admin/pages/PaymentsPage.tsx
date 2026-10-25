@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -146,13 +147,13 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
       // }
 
       const [paymentsRes, statsRes] = await Promise.all([
-        fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments?${queryParams}`, {
+        fetch(`${API_BASE_URL}/payments?${queryParams}`, {
           headers: { 
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           }
         }),
-        fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments/stats`, {
+        fetch(`${API_BASE_URL}/payments/stats`, {
           headers: { 
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
@@ -243,7 +244,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
     }
     if (!confirm(`Mark payment ${payment.reference} as successful?`)) return;
     try {
-      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments/simulate`, {
+      const response = await fetch(`${API_BASE_URL}/payments/simulate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reference: payment.reference }),
@@ -260,7 +261,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
   const handleRejectPayment = async (payment: any) => {
     if (!confirm(`Reject payment ${payment.reference}?`)) return;
     try {
-      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments/${payment._id}`, {
+      const response = await fetch(`${API_BASE_URL}/payments/${payment._id}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -317,7 +318,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
       let pages = 1;
       do {
         queryParams.set('page', String(page));
-        const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments?${queryParams}`, {
+        const response = await fetch(`${API_BASE_URL}/payments?${queryParams}`, {
           headers: {
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
@@ -749,7 +750,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
                               onClick={async () => {
                                 if (confirm('Are you sure you want to delete this payment? This action cannot be undone.')) {
                                   try {
-                                    const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/payments/${payment._id}`, {
+                                    const response = await fetch(`${API_BASE_URL}/payments/${payment._id}`, {
                                       method: 'DELETE',
                                       headers: { 
                                         'Authorization': `Bearer ${authToken}`,

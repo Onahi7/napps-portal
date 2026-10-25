@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
@@ -18,7 +19,7 @@ export default function PaymentStatus() {
   const [paymentReference, setPaymentReference] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
   const reference = searchParams.get('reference');
   const submissionId = searchParams.get('submissionId');
 

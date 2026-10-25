@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +24,7 @@ const LevyPaymentDownload = () => {
   const [payments, setPayments] = useState<any[]>([]);
   const [downloading, setDownloading] = useState<string | null>(null);
 
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   const handleSearch = async () => {
     if (!identifier.trim()) {

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
@@ -73,7 +74,7 @@ const PAYMENT_CHARGE = 100;
 
 const LevyPayment = () => {
   const navigate = useNavigate();
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   const [loading, setLoading] = useState(false);
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);

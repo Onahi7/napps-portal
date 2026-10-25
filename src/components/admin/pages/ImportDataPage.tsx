@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,7 +67,7 @@ export function ImportDataPage({ authToken }: ImportDataPageProps) {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/proprietors/import/csv`, {
+      const response = await fetch(`${API_BASE_URL}/proprietors/import/csv`, {
         method: 'POST',
         body: formData,
         headers: {

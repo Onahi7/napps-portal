@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -164,7 +165,7 @@ export default function ProprietorDetailPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/proprietors/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/proprietors/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -211,7 +212,7 @@ export default function ProprietorDetailPage() {
     try {
       setSaving(true);
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/proprietors/${id}/enrollment`, {
+      const response = await fetch(`${API_BASE_URL}/proprietors/${id}/enrollment`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -238,7 +239,7 @@ export default function ProprietorDetailPage() {
     try {
       setSaving(true);
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/proprietors/${id}/payment`, {
+      const response = await fetch(`${API_BASE_URL}/proprietors/${id}/payment`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -273,7 +274,7 @@ export default function ProprietorDetailPage() {
       form.append('file', file);
       form.append('proprietorId', id);
       form.append('sessionId', evidenceSession);
-      const response = await fetch(`${'https://napps-backend.dicksonhardy7.workers.dev/api/v1'}/proprietors/registration/evidence`, {
+      const response = await fetch(`${API_BASE_URL}/proprietors/registration/evidence`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: form,

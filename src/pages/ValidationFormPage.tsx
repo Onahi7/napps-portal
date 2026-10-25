@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ export const ValidationFormPage = () => {
   const [searchParams] = useSearchParams();
   const queryId = searchParams.get('id');
 
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('');

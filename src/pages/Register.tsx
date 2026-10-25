@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
@@ -38,7 +39,7 @@ export default function Register() {
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [resumeId, setResumeId] = useState("");
 
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   // Load saved progress on mount
   useEffect(() => {
@@ -184,13 +185,16 @@ export default function Register() {
         const errorData = await response.json().catch(() => ({}));
         
         if (response.status === 409) {
-          // Conflict - email or phone already exists
           const message = errorData.message || 'Email or phone number already registered';
           toast.error(message, {
-            description: 'If you already started registration, please use "Resume Registration" option',
-            duration: 5000,
+            description: 'Your school or proprietor record is already in the database. You can find your record or sign in.',
+            duration: 8000,
+            action: {
+              label: 'Find Record',
+              onClick: () => navigate('/verification'),
+            },
           });
-          throw new Error(message);
+          return;
         }
         
         throw new Error(errorData.message || 'Failed to save personal information');

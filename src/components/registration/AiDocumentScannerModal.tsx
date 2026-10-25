@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useRef } from "react";
 import Tesseract from "tesseract.js";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -45,7 +46,7 @@ interface AiDocumentScannerModalProps {
 }
 
 export const AiDocumentScannerModal = ({ open, onOpenChange, onApplyData }: AiDocumentScannerModalProps) => {
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   const [scanning, setScanning] = useState(false);
   const [scanComplete, setScanComplete] = useState(false);

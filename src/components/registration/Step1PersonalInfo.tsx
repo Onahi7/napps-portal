@@ -446,8 +446,8 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-semibold text-xs text-slate-800 uppercase tracking-wider">{level} Level</span>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                        {['2022/2023', '2023/2024', '2024/2025', '2025/2026'].map((year) => {
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                        {['2022/2023', '2023/2024', '2024/2025', '2025/2026', '2026/2027'].map((year) => {
                           const key = `${level}-${year}`;
                           const isChecked = participation[key] || false;
                           return (

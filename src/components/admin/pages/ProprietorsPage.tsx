@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -51,7 +52,7 @@ import { exportToCSV, exportTableToPDF } from '@/lib/export-utils';
 import { NAPPS_CHAPTERS } from '@/constants/napps-chapters';
 import { toast } from 'sonner';
 
-const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+
 
 interface Proprietor {
   _id: string;

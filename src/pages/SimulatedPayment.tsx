@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { CreditCard, Lock, CheckCircle, Loader2, Sparkles, School, User } from 'lucide-react';
 
-const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+
 
 interface FeeItem {
   name?: string;

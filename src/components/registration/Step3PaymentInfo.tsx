@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,8 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
-const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
-const EVIDENCE_SESSIONS = ['2025/2026', '2024/2025', '2023/2024', '2022/2023', '2021/2022'];
+
+const EVIDENCE_SESSIONS = ['2026/2027', '2025/2026', '2024/2025', '2023/2024', '2022/2023', '2021/2022'];
 
 interface EvidenceItem {
   sessionId: string;

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -37,7 +38,7 @@ export const EditProfileDialog = ({ open, onClose, proprietorData, onSave }: Edi
     setIsSubmitting(true);
 
     try {
-      const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+      
       
       const response = await fetch(`${API_BASE_URL}/proprietors/${proprietorData._id}`, {
         method: 'PATCH',

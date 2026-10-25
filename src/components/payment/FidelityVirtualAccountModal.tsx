@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -52,8 +53,7 @@ export const FidelityVirtualAccountModal: React.FC<FidelityVirtualAccountModalPr
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState<boolean>(false);
 
-  const API_BASE_URL =
-    'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   // Calculate remaining time
   useEffect(() => {

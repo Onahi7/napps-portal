@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
@@ -27,7 +28,7 @@ const LevyPaymentVerify = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
   const reference = searchParams.get('reference') || searchParams.get('tx_ref');
 
   useEffect(() => {

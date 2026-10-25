@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,7 +74,7 @@ const DEFAULT_SUBJECTS = [
 ];
 
 export default function NnsucePortal() {
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   // Navigation tab state
   const [activeTab, setActiveTab] = useState("overview");

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import { CheckCircle, Download, Home, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 
-const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+
 
 interface FeeItem {
   name?: string;

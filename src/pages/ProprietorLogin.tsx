@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ export const ProprietorLogin = () => {
   const [identifier, setIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

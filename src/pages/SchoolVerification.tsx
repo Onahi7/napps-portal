@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
@@ -29,7 +30,7 @@ export default function SchoolVerification() {
   const [searchParams] = useSearchParams();
   const queryId = searchParams.get('id') || searchParams.get('receipt') || searchParams.get('nnsuce') || searchParams.get('regNo');
 
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   const [searchTerm, setSearchTerm] = useState(queryId || "");
   const [loading, setLoading] = useState(false);

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -107,7 +108,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
     pages: 0,
   });
 
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   const fetchLevyPaymentsData = useCallback(async (page: number = 1, limit: number = 10) => {
     try {

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const API_BASE_URL = "https://napps-backend.dicksonhardy7.workers.dev/api/v1";
+
 
 const SESSION_OPTIONS = Array.from({ length: 12 }, (_, i) => {
   const year = new Date().getUTCFullYear() - i;

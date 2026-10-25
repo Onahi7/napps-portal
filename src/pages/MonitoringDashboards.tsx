@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ import { DuesDistributionBreakdown } from "@/components/dues/DuesDistributionBre
 import { toast } from "sonner";
 
 export default function MonitoringDashboards() {
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   const [roleTab, setRoleTab] = useState("state");
   const [selectedLga, setSelectedLga] = useState("Lafia");

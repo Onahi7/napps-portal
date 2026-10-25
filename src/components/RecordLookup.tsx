@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +69,7 @@ export interface ProprietorRecord {
 type SearchMode = 'all' | 'school' | 'phone' | 'name' | 'regNo';
 
 export const RecordLookup = () => {
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchMode, setSearchMode] = useState<SearchMode>('all');

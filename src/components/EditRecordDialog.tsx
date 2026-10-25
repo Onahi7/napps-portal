@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -140,7 +141,7 @@ interface ProprietorRecord {
 }
 
 export const EditRecordDialog = ({ open, onOpenChange, record, onSuccess }: EditRecordDialogProps) => {
-  const API_BASE_URL = 'https://napps-backend.dicksonhardy7.workers.dev/api/v1';
+  
   const [loading, setLoading] = useState(false);
 
   // Parse existing participation history
@@ -487,8 +488,8 @@ export const EditRecordDialog = ({ open, onOpenChange, record, onSuccess }: Edit
                       {['National', 'State', 'Zonal'].map((level) => (
                         <div key={level}>
                           <h5 className="font-medium mb-2">{level} Level</h5>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            {['2022/2023', '2023/2024', '2024/2025', '2025/2026'].map((year) => {
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                            {['2022/2023', '2023/2024', '2024/2025', '2025/2026', '2026/2027'].map((year) => {
                               const key = `${level}-${year}`;
                               return (
                                 <div key={key} className="flex items-center space-x-2">
