@@ -466,7 +466,7 @@ export const generateLevyReceipt = async (paymentData: LevyPaymentData): Promise
 
   doc.setTextColor(...cGold);
   doc.setFontSize(6.5);
-  doc.text('★ ★ ★', sealCenterX, sealCenterY - 4.5, { align: 'center' });
+  doc.text('- OFFICIAL SEAL -', sealCenterX, sealCenterY - 4.5, { align: 'center' });
 
   doc.setFillColor(220, 252, 231);
   doc.roundedRect(sealCenterX - 13, sealCenterY - 2.5, 26, 6, 1, 1, 'F');
@@ -520,26 +520,22 @@ export const generateLevyReceipt = async (paymentData: LevyPaymentData): Promise
   doc.setTextColor(...cSlateMuted);
   doc.text('Building Levy Committee', sign2X + (signColW - 2) / 2, authBoxY + 35, { align: 'center' });
 
-  // 8. Official Bottom Legal Disclaimer & Verification Notice
-  nextY = authBoxY + authBoxH + 4;
+  // 8. Official Bottom Legal Disclaimer & Verification Notice (Properly Wrapped)
+  nextY = authBoxY + authBoxH + 3.5;
   doc.setTextColor(...cSlateMuted);
   doc.setFont('helvetica', 'italic');
-  doc.setFontSize(6);
-  doc.text(
+  doc.setFontSize(6.2);
+
+  const noticeLines = [
     'IMPORTANT NOTICE: This electronic payment receipt is an official certified legal instrument of NAPPS Nasarawa State Chapter.',
-    margin + contentWidth / 2,
-    nextY,
-    { align: 'center' }
-  );
-  doc.text(
-    'It confirms settlement of the ₦5,600.00 State Secretariat Building Levy. Alteration, unauthorized replication, or counterfeiting is strictly prohibited and subject to legal prosecution.',
-    margin + contentWidth / 2,
-    nextY + 3.5,
-    { align: 'center' }
-  );
+    `It confirms settlement of the NGN ${formattedAmount} State Secretariat Building Levy. Alteration or counterfeiting is strictly prohibited.`
+  ];
+  noticeLines.forEach((line, i) => {
+    doc.text(line, margin + contentWidth / 2, nextY + i * 3.5, { align: 'center' });
+  });
 
   // Security checksum footer bar
-  nextY += 7;
+  nextY += 8.5;
   doc.setFillColor(...cEmerald);
   doc.rect(margin + 4, nextY, contentWidth - 8, 6, 'F');
 
