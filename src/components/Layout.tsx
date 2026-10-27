@@ -19,6 +19,7 @@ import nappsLogo from "@/assets/napps-logo.png";
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isLevyRoute = location.pathname.startsWith('/levy-payment');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => {
@@ -72,22 +73,31 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
             {/* Desktop CTAs */}
             <div className="hidden lg:flex items-center gap-3">
-              <Link to="/proprietor-login">
-                <Button className="bg-[#064e3b] hover:bg-[#047857] text-white font-bold text-xs sm:text-sm px-5 h-10 rounded-xl shadow-xs transition-all hover:shadow-md">
-                  <LogIn className="w-4 h-4 mr-2 text-amber-400" />
-                  Proprietor Sign-In
-                </Button>
-              </Link>
+              {isLevyRoute ? (
+                <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200/80 text-xs font-semibold text-emerald-800 shadow-xs">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Direct Payment &bull; No Login Required</span>
+                </div>
+              ) : (
+                <Link to="/proprietor-login">
+                  <Button className="bg-[#064e3b] hover:bg-[#047857] text-white font-bold text-xs sm:text-sm px-5 h-10 rounded-xl shadow-xs transition-all hover:shadow-md">
+                    <LogIn className="w-4 h-4 mr-2 text-amber-400" />
+                    Proprietor Sign-In
+                  </Button>
+                </Link>
+              )}
             </div>
 
             {/* Mobile Hamburger Button */}
             <div className="flex items-center gap-2 lg:hidden">
-              <Link to="/proprietor-login" className="sm:hidden">
-                <Button size="sm" variant="outline" className="h-9 px-2.5 text-xs font-semibold">
-                  <LogIn className="w-3.5 h-3.5 mr-1 text-emerald-700" />
-                  Sign In
-                </Button>
-              </Link>
+              {!isLevyRoute && (
+                <Link to="/proprietor-login" className="sm:hidden">
+                  <Button size="sm" variant="outline" className="h-9 px-2.5 text-xs font-semibold">
+                    <LogIn className="w-3.5 h-3.5 mr-1 text-emerald-700" />
+                    Sign In
+                  </Button>
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -126,18 +136,27 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
               })}
             </div>
 
-            <div className="pt-3 border-t border-slate-200">
-              <Link 
-                to="/proprietor-login" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full block"
-              >
-                <Button className="w-full justify-center bg-[#064e3b] hover:bg-[#047857] text-white font-semibold">
-                  <LogIn className="w-4 h-4 mr-2 text-amber-400" />
-                  Proprietor Dashboard Login
-                </Button>
-              </Link>
-            </div>
+            {!isLevyRoute ? (
+              <div className="pt-3 border-t border-slate-200">
+                <Link 
+                  to="/proprietor-login" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full block"
+                >
+                  <Button className="w-full justify-center bg-[#064e3b] hover:bg-[#047857] text-white font-semibold">
+                    <LogIn className="w-4 h-4 mr-2 text-amber-400" />
+                    Proprietor Dashboard Login
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="pt-3 border-t border-slate-200 text-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-xs font-semibold text-emerald-800">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Direct Payment &bull; No Login Required</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </header>

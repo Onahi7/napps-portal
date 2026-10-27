@@ -327,9 +327,9 @@ const LevyPayment = () => {
       <div className="min-h-screen bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--secondary)/0.45))] py-8">
         <div className="container mx-auto max-w-5xl px-4">
           <PortalPageShell
-            eyebrow="Levy Collection"
-            title="Secretariat building levy"
-            description="This flow now follows the SPRS-style fidelity upgrade with cleaner payment framing, stronger guidance around chapter and school selection, and easier recovery when a payment is already in progress."
+            eyebrow="Building Project Levy"
+            title="Secretariat Building Levy"
+            description="Official direct payment portal for the NAPPS Nasarawa State Secretariat Building Fund. Open to all registered and participating private schools — no login or account creation required."
             badge={`NGN ${LEVY_AMOUNT.toLocaleString()}`}
             icon={CreditCard}
             stats={[
