@@ -29,11 +29,17 @@ const LevyPaymentVerify = () => {
   const [downloading, setDownloading] = useState(false);
 
   
-  const reference = searchParams.get('reference') || searchParams.get('tx_ref');
+  const reference =
+    searchParams.get('reference') ||
+    searchParams.get('tx_ref') ||
+    localStorage.getItem('levyPaymentReference');
+  const checkoutId =
+    searchParams.get('checkout_id') ||
+    searchParams.get('checkoutId');
 
   useEffect(() => {
     verifyPayment();
-  }, [reference]);
+  }, [reference, checkoutId]);
 
   const verifyPayment = async () => {
     if (!reference) {
@@ -47,7 +53,11 @@ const LevyPaymentVerify = () => {
     setStatus('verifying');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/levy-payments/verify/${reference}`);
+      const queryParams = new URLSearchParams();
+      if (checkoutId) queryParams.set('checkout_id', checkoutId);
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+
+      const response = await fetch(`${API_BASE_URL}/levy-payments/verify/${encodeURIComponent(reference)}${queryString}`);
       if (response.ok) {
         const data = await response.json();
         setPaymentDetails(data);

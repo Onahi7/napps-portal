@@ -239,10 +239,6 @@ const LevyPayment = () => {
       toast.error('Please select or enter a school name');
       return false;
     }
-    if (formData.wards.filter((ward) => ward.name.trim()).length === 0) {
-      toast.error('Please add at least one ward');
-      return false;
-    }
     return true;
   };
 
@@ -533,7 +529,7 @@ const LevyPayment = () => {
 
                   <div className="portal-panel-muted space-y-4 border border-primary/10 p-5">
                     <div className="flex items-center justify-between">
-                      <Label>Wards *</Label>
+                      <Label>Wards (Optional)</Label>
                       <Button type="button" variant="outline" size="sm" onClick={addWard}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add Ward

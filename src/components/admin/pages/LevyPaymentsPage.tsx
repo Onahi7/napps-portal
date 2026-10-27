@@ -372,7 +372,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
   const statsConfig = [
     {
       title: 'Total Revenue',
-      value: `₦${((stats?.totalRevenue || 0) / 100).toLocaleString()}`,
+      value: `₦${(((stats as any)?.totalAmountNaira ? (stats as any).totalAmountNaira * 100 : (stats?.totalRevenue || stats?.totalAmount || 0)) / 100).toLocaleString()}`,
       count: `${stats?.totalPayments || 0} payments`,
       icon: Building2,
       color: 'text-green-600',
@@ -381,7 +381,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
     {
       title: 'Successful Payments',
       value: `${stats?.successfulPayments || 0}`,
-      count: `₦${((stats?.totalRevenue || 0) / 100).toLocaleString()} paid`,
+      count: `₦${(((stats as any)?.totalAmountNaira ? (stats as any).totalAmountNaira * 100 : (stats?.totalRevenue || stats?.totalAmount || 0)) / 100).toLocaleString()} paid`,
       icon: CheckCircle,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
