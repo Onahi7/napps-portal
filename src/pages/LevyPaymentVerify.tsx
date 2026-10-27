@@ -35,7 +35,9 @@ const LevyPaymentVerify = () => {
     localStorage.getItem('levyPaymentReference');
   const checkoutId =
     searchParams.get('checkout_id') ||
-    searchParams.get('checkoutId');
+    searchParams.get('checkoutId') ||
+    localStorage.getItem('levyCheckoutId');
+  const savedPaymentUrl = localStorage.getItem('levyPaymentUrl');
 
   useEffect(() => {
     verifyPayment();
@@ -65,6 +67,13 @@ const LevyPaymentVerify = () => {
         if (data.status === 'success') {
           setStatus('success');
           localStorage.removeItem('levyPaymentFormData');
+          localStorage.removeItem('levyPaymentUrl');
+          if (reference) {
+            localStorage.setItem('lastVerifiedReference', reference);
+          }
+          if (data.receiptNumber) {
+            localStorage.setItem('lastVerifiedReceiptNumber', data.receiptNumber);
+          }
           toast.success('Payment verified successfully');
         } else if (data.status === 'failed') {
           setStatus('failed');
@@ -258,6 +267,19 @@ const LevyPaymentVerify = () => {
                         </Button>
                       )}
 
+                      {status === 'pending' && savedPaymentUrl && (
+                        <Button
+                          size="lg"
+                          className="w-full bg-[#064e3b] hover:bg-[#047857] text-white font-semibold"
+                          onClick={() => {
+                            window.location.href = savedPaymentUrl;
+                          }}
+                        >
+                          <CreditCard className="mr-2 h-4 w-4 text-amber-300" />
+                          Resume Payment on Bachs
+                        </Button>
+                      )}
+
                       {(status === 'failed' || status === 'pending') && (
                         <Button size="lg" className="w-full" onClick={verifyPayment} disabled={isLoading}>
                           <RefreshCcw className="mr-2 h-4 w-4" />
@@ -265,16 +287,16 @@ const LevyPaymentVerify = () => {
                         </Button>
                       )}
 
-                      {status === 'failed' && (
+                      {(status === 'failed' || status === 'success') && (
                         <Button variant="outline" size="lg" className="w-full" onClick={() => navigate('/levy-payment')}>
                           <FileText className="mr-2 h-4 w-4" />
-                          Start new payment
+                          {status === 'success' ? 'Pay for another school' : 'Start new payment'}
                         </Button>
                       )}
 
-                      <Button variant="outline" size="lg" className="w-full" onClick={() => navigate('/dashboard')}>
+                      <Button variant="ghost" size="lg" className="w-full text-slate-600" onClick={() => navigate('/')}>
                         <Home className="mr-2 h-4 w-4" />
-                        Back to dashboard
+                        Return to Portal Home
                       </Button>
                     </div>
                   </>

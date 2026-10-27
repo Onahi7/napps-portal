@@ -72,6 +72,14 @@ const LEVY_AMOUNT = 5600;
 const LEVY_BASE = 5500;
 const PAYMENT_CHARGE = 100;
 
+interface ActivePaymentSession {
+  reference: string;
+  receiptNumber?: string;
+  paymentUrl?: string;
+  checkoutId?: string;
+  timestamp?: number;
+}
+
 const LevyPayment = () => {
   const navigate = useNavigate();
   
@@ -81,6 +89,7 @@ const LevyPayment = () => {
   const [loadingSchools, setLoadingSchools] = useState(true);
   const [schools, setSchools] = useState<School[]>([]);
   const [existingPayment, setExistingPayment] = useState<any>(null);
+  const [activeSession, setActiveSession] = useState<ActivePaymentSession | null>(null);
   const [showManualSchoolInput, setShowManualSchoolInput] = useState(false);
   const [formData, setFormData] = useState<LevyPaymentFormData>({
     memberName: '',
@@ -93,20 +102,50 @@ const LevyPayment = () => {
   });
 
   useEffect(() => {
+    // 1. Restore form inputs
     const savedData = localStorage.getItem('levyPaymentFormData');
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
         setFormData(parsed);
         setShowManualSchoolInput(parsed.isManualSchoolEntry || false);
-        toast.info('Your previous form data has been restored');
       } catch (error) {
         console.error('Error loading saved form data:', error);
       }
     }
 
+    // 2. Restore active payment session if recent (within 48 hrs)
+    const savedRef = localStorage.getItem('levyPaymentReference');
+    const savedUrl = localStorage.getItem('levyPaymentUrl');
+    const savedReceipt = localStorage.getItem('levyReceiptNumber');
+    const savedCheckoutId = localStorage.getItem('levyCheckoutId');
+    const savedTime = localStorage.getItem('levyPaymentTimestamp');
+
+    if (savedRef) {
+      const isRecent = !savedTime || (Date.now() - parseInt(savedTime, 10)) < 48 * 60 * 60 * 1000;
+      if (isRecent) {
+        setActiveSession({
+          reference: savedRef,
+          receiptNumber: savedReceipt || undefined,
+          paymentUrl: savedUrl || undefined,
+          checkoutId: savedCheckoutId || undefined,
+          timestamp: savedTime ? parseInt(savedTime, 10) : undefined,
+        });
+      }
+    }
+
     fetchSchools();
   }, []);
+
+  const clearActiveSession = () => {
+    localStorage.removeItem('levyPaymentReference');
+    localStorage.removeItem('levyPaymentUrl');
+    localStorage.removeItem('levyReceiptNumber');
+    localStorage.removeItem('levyCheckoutId');
+    localStorage.removeItem('levyPaymentTimestamp');
+    setActiveSession(null);
+    toast.info('Session reset. You can start a fresh payment.');
+  };
 
   useEffect(() => {
     if (formData.email || formData.phone || formData.memberName) {
@@ -292,6 +331,13 @@ const LevyPayment = () => {
       const result = await response.json();
       localStorage.setItem('levyPaymentReference', result.reference);
       localStorage.setItem('levyReceiptNumber', result.receiptNumber);
+      if (result.paymentUrl) {
+        localStorage.setItem('levyPaymentUrl', result.paymentUrl);
+      }
+      if (result.checkoutId) {
+        localStorage.setItem('levyCheckoutId', result.checkoutId);
+      }
+      localStorage.setItem('levyPaymentTimestamp', Date.now().toString());
 
       toast.success('Redirecting to payment gateway...', {
         description: 'Your progress has been saved.',
@@ -362,6 +408,59 @@ const LevyPayment = () => {
               </CardHeader>
 
               <CardContent>
+                {activeSession && (
+                  <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-50/80 p-5 shadow-xs">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <h3 className="text-sm sm:text-base font-bold text-emerald-950">Active Payment Session Restored</h3>
+                        </div>
+                        <p className="mt-1 text-xs text-emerald-800">
+                          A session in progress was found for Ref: <span className="font-mono font-bold text-emerald-950">{activeSession.reference}</span>. If you refreshed or had a network break, your progress is safe.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {activeSession.paymentUrl && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="bg-[#064e3b] hover:bg-[#047857] text-white font-semibold text-xs h-9 shadow-xs"
+                            onClick={() => {
+                              toast.info('Reopening your secure Bachs checkout session...');
+                              window.location.href = activeSession.paymentUrl!;
+                            }}
+                          >
+                            <CreditCard className="mr-1.5 h-3.5 w-3.5 text-amber-300" />
+                            Resume Bachs Payment
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="border-emerald-600 text-emerald-900 hover:bg-emerald-100 text-xs h-9 font-semibold"
+                          onClick={() => {
+                            navigate(`/levy-payment/verify?reference=${encodeURIComponent(activeSession.reference)}${activeSession.checkoutId ? `&checkout_id=${encodeURIComponent(activeSession.checkoutId)}` : ''}`);
+                          }}
+                        >
+                          <Check className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
+                          Check Status / Download Receipt
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-slate-500 hover:text-slate-800 text-xs h-9"
+                          onClick={clearActiveSession}
+                        >
+                          Start Fresh
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {existingPayment && (
                   <div className="portal-panel-muted mb-6 border border-amber-200/70 p-4">
                     <h3 className="mb-2 font-semibold text-amber-800">Existing payment detected</h3>
