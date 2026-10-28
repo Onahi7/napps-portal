@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Download, Home, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
+import { generateLevyReceipt } from '@/utils/receiptGenerator';
 
 
 
@@ -56,6 +57,12 @@ export const PaymentSuccess = () => {
       return;
     }
 
+    // Direct levy payments belong on the dedicated executive verification page
+    if (reference.startsWith('LEVY_')) {
+      navigate(`/levy-payment/verify?reference=${encodeURIComponent(reference)}`, { replace: true });
+      return;
+    }
+
     const verifyPayment = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/payments/verify/${reference}`);
@@ -78,7 +85,31 @@ export const PaymentSuccess = () => {
   }, [reference, navigate]);
 
   const handleDownloadReceipt = async () => {
-    if (!receiptRef.current || !paymentData) {
+    if (!paymentData) {
+      toast.error('Unable to generate receipt');
+      return;
+    }
+
+    // If this is a levy payment, generate the official executive PDF receipt
+    if (paymentData.reference?.startsWith('LEVY_') || paymentData.paymentType === 'levy') {
+      try {
+        setDownloading(true);
+        toast.info('Generating official levy receipt PDF...');
+        const response = await fetch(`${API_BASE_URL}/levy-payments/verify/${encodeURIComponent(paymentData.reference)}`);
+        if (response.ok) {
+          const levyData = await response.json();
+          await generateLevyReceipt(levyData);
+          toast.success('Official executive receipt downloaded successfully!');
+          return;
+        }
+      } catch (error) {
+        console.error('Error generating executive levy receipt:', error);
+      } finally {
+        setDownloading(false);
+      }
+    }
+
+    if (!receiptRef.current) {
       toast.error('Unable to generate receipt');
       return;
     }
@@ -135,12 +166,12 @@ export const PaymentSuccess = () => {
           {/* Header with Logo */}
           <div className="text-center mb-8 border-b-2 border-green-600 pb-6">
             <div className="flex items-center justify-center gap-4 mb-4">
-              <div className="w-24 h-24 bg-gradient-to-br from-green-700 to-green-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg border-4 border-white">
-                <div className="text-center">
-                  <div className="text-2xl">NAPPS</div>
-                  <div className="text-xs">NIGERIA</div>
-                </div>
-              </div>
+              <img
+                src="/napps-logo.png"
+                alt="NAPPS Official Crest"
+                className="w-24 h-24 object-contain rounded-full shadow-md border-2 border-green-600 bg-white p-1"
+                crossOrigin="anonymous"
+              />
             </div>
             <h1 className="text-3xl font-bold text-green-700 mb-2">
               NASARAWA STATE BRANCH
@@ -262,8 +293,11 @@ export const PaymentSuccess = () => {
       <div className="max-w-2xl mx-auto">
         {/* Success Animation */}
         <div className="flex flex-col items-center mb-8 animate-in fade-in slide-in-from-top duration-700">
-          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-4 animate-bounce">
-            <CheckCircle className="w-16 h-16 text-green-600" />
+          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-3 shadow-md border-2 border-green-600">
+            <img src="/napps-logo.png" alt="NAPPS Logo" className="w-14 h-14 object-contain" />
+          </div>
+          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-4 animate-bounce">
+            <CheckCircle className="w-10 h-10 text-green-600" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-center text-green-700 mb-2">
             Payment Successful!

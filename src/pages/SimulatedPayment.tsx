@@ -69,6 +69,12 @@ export const SimulatedPayment = () => {
       return;
     }
 
+    if (reference.startsWith('LEVY_')) {
+      toast.warning('Levy payments use the official Bachs checkout. Redirecting to official verification...');
+      navigate(`/levy-payment/verify?reference=${encodeURIComponent(reference)}`, { replace: true });
+      return;
+    }
+
     const fetchPaymentInfo = async () => {
       try {
         setLoading(true);
@@ -174,7 +180,11 @@ export const SimulatedPayment = () => {
         });
 
         setTimeout(() => {
-          navigate(`/payment/success?reference=${reference}`);
+          if (reference.startsWith('LEVY_')) {
+            navigate(`/levy-payment/verify?reference=${encodeURIComponent(reference)}`);
+          } else {
+            navigate(`/payment/success?reference=${reference}`);
+          }
         }, 1500);
       } else {
         const error = await response.json().catch(() => ({}));
