@@ -123,7 +123,9 @@ const LevyPayment = () => {
 
     if (savedRef) {
       const isRecent = !savedTime || (Date.now() - parseInt(savedTime, 10)) < 48 * 60 * 60 * 1000;
-      if (isRecent) {
+      const isSimulatedUrl = savedUrl && savedUrl.includes('/payment/simulate');
+
+      if (isRecent && !isSimulatedUrl) {
         setActiveSession({
           reference: savedRef,
           receiptNumber: savedReceipt || undefined,
@@ -131,6 +133,13 @@ const LevyPayment = () => {
           checkoutId: savedCheckoutId || undefined,
           timestamp: savedTime ? parseInt(savedTime, 10) : undefined,
         });
+      } else if (isSimulatedUrl) {
+        // Automatically purge any obsolete simulated test payment URLs from storage
+        localStorage.removeItem('levyPaymentReference');
+        localStorage.removeItem('levyPaymentUrl');
+        localStorage.removeItem('levyReceiptNumber');
+        localStorage.removeItem('levyCheckoutId');
+        localStorage.removeItem('levyPaymentTimestamp');
       }
     }
 
