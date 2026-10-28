@@ -68,9 +68,9 @@ const NAPPS_CHAPTERS = [
   'Nas Poly',
 ];
 
-const LEVY_AMOUNT = 5600;
+const LEVY_AMOUNT = 5500;
 const LEVY_BASE = 5500;
-const PAYMENT_CHARGE = 100;
+const PAYMENT_CHARGE = 0;
 
 interface ActivePaymentSession {
   reference: string;
@@ -388,8 +388,8 @@ const LevyPayment = () => {
             badge={`NGN ${LEVY_AMOUNT.toLocaleString()}`}
             icon={CreditCard}
             stats={[
-              { label: 'Base levy', value: `NGN ${LEVY_BASE.toLocaleString()}`, helper: 'Core chapter levy amount.' },
-              { label: 'Processing', value: `NGN ${PAYMENT_CHARGE.toLocaleString()}`, helper: 'Gateway and transaction fee.' },
+              { label: 'Levy Amount', value: `NGN ${LEVY_AMOUNT.toLocaleString()}`, helper: 'Core secretariat building levy.' },
+              { label: 'Processing', value: 'NGN 0 (Waived)', helper: 'No extra transaction charge.' },
               { label: 'Coverage', value: 'All chapters', helper: 'School lookup narrows after chapter selection.' },
             ]}
           >
@@ -666,18 +666,18 @@ const LevyPayment = () => {
                     <h3 className="text-lg font-semibold">Payment summary</h3>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Levy amount:</span>
-                      <span>NGN {LEVY_BASE.toLocaleString()}</span>
+                      <span>NGN {LEVY_AMOUNT.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Payment processing charge:</span>
-                      <span>NGN {PAYMENT_CHARGE.toLocaleString()}</span>
+                      <span className="font-medium text-emerald-600">NGN 0 (Waived)</span>
                     </div>
                     <div className="flex items-center justify-between border-t pt-2">
                       <span className="font-semibold">Total:</span>
                       <span className="text-2xl font-bold">NGN {LEVY_AMOUNT.toLocaleString()}</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Includes NGN {PAYMENT_CHARGE.toLocaleString()} payment processing charge.
+                      Flat rate of NGN {LEVY_AMOUNT.toLocaleString()}. No additional transaction charges.
                     </p>
                   </div>
 
