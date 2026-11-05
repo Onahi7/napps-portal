@@ -131,11 +131,23 @@ export function ChaptersPage({ authToken }: ChaptersPageProps) {
   }, [authToken, toast]);
 
   const filteredProprietors = (proprietors || []).filter((proprietor) => {
-    const matchesSearch = 
-      `${proprietor.firstName} ${proprietor.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      proprietor.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      proprietor.phone.includes(searchQuery) ||
-      (proprietor.school?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase().trim();
+    const cleanQ = q.replace(/[^0-9]/g, '');
+    const cleanPhone = (proprietor.phone || '').replace(/[^0-9]/g, '');
+    const phoneMatches = cleanQ.length >= 4 
+      ? cleanPhone.includes(cleanQ) || (cleanPhone.length >= 10 && cleanQ.length >= 10 && cleanPhone.slice(-10) === cleanQ.slice(-10))
+      : (proprietor.phone || '').toLowerCase().includes(q);
+
+    const schoolName = (
+      (typeof proprietor.school === 'object' && proprietor.school ? (proprietor.school.name || (proprietor.school as any).schoolName) : '') ||
+      (proprietor as any).schoolName || ''
+    ).toLowerCase();
+
+    const matchesSearch = !q ||
+      `${proprietor.firstName || ''} ${proprietor.lastName || ''}`.toLowerCase().includes(q) ||
+      (proprietor.email || '').toLowerCase().includes(q) ||
+      phoneMatches ||
+      schoolName.includes(q);
     
     const matchesStatus = statusFilter === 'all' || proprietor.registrationStatus === statusFilter;
     

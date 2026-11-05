@@ -101,6 +101,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [chapterFilter, setChapterFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -108,7 +109,12 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
     pages: 0,
   });
 
-  
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim());
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   const fetchLevyPaymentsData = useCallback(async (page: number = 1, limit: number = 10) => {
     try {
@@ -128,6 +134,9 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
       }
       if (chapterFilter !== 'all') {
         queryParams.append('chapter', chapterFilter);
+      }
+      if (debouncedSearch) {
+        queryParams.append('search', debouncedSearch);
       }
 
       const headers = authToken ? { 
@@ -191,7 +200,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [authToken, statusFilter, chapterFilter, API_BASE_URL]);
+  }, [authToken, statusFilter, chapterFilter, debouncedSearch, API_BASE_URL]);
 
   useEffect(() => {
     fetchLevyPaymentsData(1, 10);
@@ -226,6 +235,9 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
       }
       if (chapterFilter !== 'all') {
         queryParams.append('chapter', chapterFilter);
+      }
+      if (debouncedSearch) {
+        queryParams.append('search', debouncedSearch);
       }
 
       const headers = authToken ? { 
@@ -359,15 +371,7 @@ export function LevyPaymentsPage({ authToken }: LevyPaymentsPageProps) {
     }
   };
 
-  const filteredPayments = payments.filter((payment) => {
-    const matchesSearch = searchTerm === '' || 
-      payment.memberName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.schoolName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.reference?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
-  });
+  const filteredPayments = payments;
 
   const statsConfig = [
     {

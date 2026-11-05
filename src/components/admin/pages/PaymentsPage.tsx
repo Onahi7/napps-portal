@@ -112,12 +112,20 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
   const [methodFilter, setMethodFilter] = useState('all');
   const [chapterFilter, setChapterFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
     total: 0,
     pages: 0,
   });
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim());
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   const fetchPaymentsData = useCallback(async (page: number = 1, limit: number = 10) => {
     if (!authToken) {
@@ -140,11 +148,12 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
       if (statusFilter !== 'all') {
         queryParams.append('status', statusFilter);
       }
-
-      // Add search parameter if exists (remove this for now to simplify)
-      // if (searchTerm.trim()) {
-      //   queryParams.append('search', searchTerm.trim());
-      // }
+      if (chapterFilter !== 'all') {
+        queryParams.append('chapter', chapterFilter);
+      }
+      if (debouncedSearch) {
+        queryParams.append('search', debouncedSearch);
+      }
 
       const [paymentsRes, statsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/payments?${queryParams}`, {
@@ -216,7 +225,7 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [authToken, statusFilter]);
+  }, [authToken, statusFilter, chapterFilter, debouncedSearch]);
 
   useEffect(() => {
     fetchPaymentsData(1, 10); // Reset to first page when filters change
@@ -439,22 +448,8 @@ export function PaymentsPage({ authToken }: PaymentsPageProps) {
     }
   };
 
-  // Client-side search filtering for immediate feedback
-  const filteredPayments = payments.filter((payment) => {
-    // Search filter
-    const matchesSearch = searchTerm === '' || 
-      payment.proprietorId?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.proprietorId?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.schoolId?.schoolName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.reference?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Chapter filter
-    const matchesChapter = chapterFilter === 'all' || 
-      (chapterFilter === 'unassigned' && (!payment.proprietorId?.chapters || payment.proprietorId.chapters.length === 0)) ||
-      (chapterFilter !== 'unassigned' && payment.proprietorId?.chapters?.includes(chapterFilter));
-    
-    return matchesSearch && matchesChapter;
-  });
+  // Server-side filtered payments
+  const filteredPayments = payments;
 
   const statsConfig = [
     {

@@ -98,23 +98,23 @@ const LevyPaymentDownload = () => {
               Download Payment Receipt
             </CardTitle>
             <CardDescription>
-              Enter your email address or phone number to find and download your payment receipt
+              Enter your email, phone number (080... or +234...), transaction reference (LEVY_...), or receipt number to locate and download your official receipt.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div>
-                <Label htmlFor="identifier">Email or Phone Number</Label>
+                <Label htmlFor="identifier">Email, Phone, Reference, or Receipt Number</Label>
                 <div className="relative">
                   {isEmail(identifier) ? (
                     <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                   ) : (
-                    <Phone className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                   )}
                   <Input
                     id="identifier"
-                    placeholder="Enter email or phone number"
+                    placeholder="e.g. 08031234567, email@example.com, LEVY_..., or NAPPS-2026-..."
                     className="pl-10"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
@@ -162,41 +162,62 @@ const LevyPaymentDownload = () => {
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <p className="text-sm text-muted-foreground">Chapter</p>
-                                <p className="font-medium">{payment.chapter}</p>
+                                <p className="font-medium">{payment.chapter || 'N/A'}</p>
                               </div>
                               <div>
                                 <p className="text-sm text-muted-foreground">Amount</p>
                                 <p className="font-bold">₦{(payment.amount / 100).toLocaleString()}</p>
                               </div>
                             </div>
-                            <div>
-                              <p className="text-sm text-muted-foreground">Payment Date</p>
-                              <p className="text-sm">
-                                {new Date(payment.paidAt).toLocaleDateString('en-NG', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                })}
-                              </p>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-sm text-muted-foreground">Date</p>
+                                <p className="text-sm">
+                                  {new Date(payment.paidAt || payment.createdAt || Date.now()).toLocaleDateString('en-NG', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                  })}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">Status</p>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
+                                  payment.status === 'success' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {payment.status === 'success' ? 'Confirmed & Paid' : 'Pending / Processing'}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
-                          <Button
-                            onClick={() => handleDownloadReceipt(payment)}
-                            disabled={downloading === payment.reference}
-                          >
-                            {downloading === payment.reference ? (
-                              <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Generating...
-                              </>
-                            ) : (
-                              <>
-                                <FileText className="w-4 h-4 mr-2" />
-                                Download Receipt
-                              </>
-                            )}
-                          </Button>
+                          {payment.status === 'success' ? (
+                            <Button
+                              onClick={() => handleDownloadReceipt(payment)}
+                              disabled={downloading === payment.reference}
+                            >
+                              {downloading === payment.reference ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Generating...
+                                </>
+                              ) : (
+                                <>
+                                  <FileText className="w-4 h-4 mr-2" />
+                                  Download Receipt
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              onClick={() => navigate(`/levy-payment/verify?reference=${encodeURIComponent(payment.reference)}`)}
+                            >
+                              Verify / Complete Payment
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
